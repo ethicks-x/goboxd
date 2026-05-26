@@ -23,7 +23,7 @@ func main() {
 	// Register routes
 	s.Router.GET("/", handlers.HomeHandler)
 	s.Router.GET("/healthz", handlers.HealthHandler)
-	s.Router.GET("/time", handlers.TimeHandler)
+	s.Router.POST("/run", handlers.RunHandler)
 	s.Router.NotFound(handlers.NotFoundHandler)
 
 	// Set up graceful shutdown
