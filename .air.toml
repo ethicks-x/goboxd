@@ -1,0 +1,21 @@
+root = "."
+tmp_dir = "/tmp/air"
+
+[build]
+  cmd = "go build -buildvcs=false -o /tmp/air/goboxd ./cmd/goboxd"
+  bin = "/tmp/air/goboxd"
+  delay = 500
+  exclude_dir = ["docs", "tests"]
+  include_ext = ["go"]
+  kill_delay = "2s"
+  rerun = false
+  send_interrupt = true
+
+[log]
+  time = false
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"

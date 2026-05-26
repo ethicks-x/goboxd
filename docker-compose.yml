@@ -9,6 +9,19 @@ services:
       - "8080:8080"
     privileged: true
 
+  dev:
+    build:
+      context: .
+      target: builder
+    image: goboxd-tools:dev
+    volumes:
+      - .:/src
+    working_dir: /src
+    ports:
+      - "8080:8080"
+    privileged: true
+    command: air
+
   tools:
     build:
       context: .

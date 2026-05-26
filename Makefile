@@ -1,4 +1,4 @@
-.PHONY: build run test integration lint
+.PHONY: build run dev test integration lint
 
 COMPOSE ?= docker compose
 TOOLS   := $(COMPOSE) --profile tools run --rm tools
@@ -8,6 +8,9 @@ build:
 
 run:
 	$(COMPOSE) up goboxd
+
+dev:
+	$(COMPOSE) up dev
 
 test:
 	$(TOOLS) go test ./...

@@ -21,7 +21,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libnl-route-3-200 libprotobuf32 \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=nsjail-builder /usr/local/bin/nsjail /usr/local/bin/nsjail
-RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8 \
+    && go install github.com/air-verse/air@v1.61.7
 WORKDIR /src
 COPY go.mod ./
 RUN go mod download
