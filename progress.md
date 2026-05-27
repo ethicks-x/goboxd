@@ -60,12 +60,12 @@
 
 ### Tests
 
-- [ ] `tests/unit/filename_test.go` — table-driven: traversal, dot-prefix, absolute paths
-- [ ] `tests/unit/flags_test.go` — allowlist pass/reject, glob `-std=*`
-- [ ] `tests/unit/limits_test.go` — merge override logic, zero-value fallback
-- [ ] `tests/unit/status_test.go` — roll-up: build_failed, first non-accepted, all accepted
-- [ ] `tests/unit/truncation_test.go` — output cap, [truncated] marker present
-- [ ] `tests/integration/run_test.go` — end-to-end: py3 hello world, cpp hello world (build tag: integration)
+- [x] `tests/unit/filename_test.go` — table-driven: traversal, dot-prefix, absolute paths
+- [x] `tests/unit/flags_test.go` — allowlist pass/reject, glob `-std=*`
+- [x] `tests/unit/limits_test.go` — merge override logic, zero-value fallback
+- [x] `tests/unit/status_test.go` — roll-up: build_failed, first non-accepted, all accepted
+- [x] `tests/unit/truncation_test.go` — output cap, [truncated] marker present
+- [x] `tests/integration/run_test.go` — end-to-end: py3 hello world, cpp hello world (build tag: integration)
 
 ### Documentation (Stage 1 minimum)
 

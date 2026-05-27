@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -36,7 +35,7 @@ func (s *NsjailSandbox) Build(ctx context.Context, job sandbox.BuildJob) sandbox
 		return sandbox.BuildResult{OK: true}
 	}
 
-	args := s.buildArgv(job.WorkDir, job.Language.Build, job.Language.Build.Limits, job.Flags)
+	args := s.buildArgv(job.WorkDir, job.Language.Build, job.Limits, job.Flags, job.Filename, job.Artifact)
 	stdout, stderr, dur, err := s.runCmd(ctx, args, "", job.WorkDir)
 	if err != nil {
 		if isInfraErr(err) {
@@ -48,7 +47,7 @@ func (s *NsjailSandbox) Build(ctx context.Context, job sandbox.BuildJob) sandbox
 }
 
 func (s *NsjailSandbox) Run(ctx context.Context, job sandbox.RunJob) sandbox.TestResult {
-	args := s.runArgv(job.WorkDir, job.Language, job.Limits, job.Flags)
+	args := s.runArgv(job.WorkDir, job.Language, job.Limits, job.Flags, job.Artifact)
 	stdout, stderr, dur, err := s.runCmd(ctx, args, job.Stdin, job.WorkDir)
 	if err != nil {
 		st := exitStatus(err, stdout, stderr)
@@ -58,31 +57,35 @@ func (s *NsjailSandbox) Run(ctx context.Context, job sandbox.RunJob) sandbox.Tes
 }
 
 // buildArgv constructs the nsjail + compiler argv for a build step.
-func (s *NsjailSandbox) buildArgv(workDir string, spec *registry.CommandSpec, limits registry.Limits, flags []string) []string {
+func (s *NsjailSandbox) buildArgv(workDir string, spec *registry.CommandSpec, limits registry.Limits, flags []string, source, artifact string) []string {
 	jail := s.baseJailArgs(workDir, limits)
-	jail = append(jail, "--", spec.Cmd)
+	jail = append(jail, "--", expandTemplate(spec.Cmd, source, artifact))
 	for _, a := range spec.Args {
 		switch a {
 		case "{{flags}}":
 			jail = append(jail, flags...)
 		default:
-			jail = append(jail, expandPath(a, workDir))
+			jail = append(jail, expandTemplate(a, source, artifact))
 		}
 	}
 	return jail
 }
 
 // runArgv constructs the nsjail + runtime argv for a run step.
-func (s *NsjailSandbox) runArgv(workDir string, lang *registry.Language, limits registry.Limits, flags []string) []string {
+func (s *NsjailSandbox) runArgv(workDir string, lang *registry.Language, limits registry.Limits, flags []string, artifact string) []string {
 	spec := lang.Run
 	jail := s.baseJailArgs(workDir, limits)
-	jail = append(jail, "--", spec.Cmd)
+	cmd := expandTemplate(spec.Cmd, artifact, artifact)
+	if !strings.HasPrefix(cmd, "/") {
+		cmd = "./" + cmd
+	}
+	jail = append(jail, "--", cmd)
 	for _, a := range spec.Args {
 		switch a {
 		case "{{flags}}":
 			jail = append(jail, flags...)
 		default:
-			jail = append(jail, expandPath(a, workDir))
+			jail = append(jail, expandTemplate(a, artifact, artifact))
 		}
 	}
 	return jail
@@ -98,6 +101,9 @@ func (s *NsjailSandbox) baseJailArgs(workDir string, limits registry.Limits) []s
 		"--log_fd", "3",
 		"--disable_proc",
 		"--iface_no_lo",
+		"--env", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+		"--env", "HOME=" + workDir,
+		"--env", "LANG=C.UTF-8",
 	}
 	if limits.WallTimeS > 0 {
 		args = append(args, "--time_limit", strconv.Itoa(limits.WallTimeS))
@@ -176,11 +182,12 @@ type devNullWriter struct{}
 
 func (devNullWriter) Write(p []byte) (int, error) { return len(p), nil }
 
-// expandPath replaces template vars that reference paths within workDir.
-func expandPath(arg, workDir string) string {
-	if strings.HasPrefix(arg, "./") {
-		return filepath.Join(workDir, arg[2:])
-	}
+// expandTemplate substitutes {{source}} and {{artifact}} placeholders with the
+// corresponding filenames. Filenames are resolved relative to the workdir (the
+// jail's cwd), so callers can pass bare filenames.
+func expandTemplate(arg, source, artifact string) string {
+	arg = strings.ReplaceAll(arg, "{{source}}", source)
+	arg = strings.ReplaceAll(arg, "{{artifact}}", artifact)
 	return arg
 }
 
