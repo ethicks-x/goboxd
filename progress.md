@@ -32,10 +32,10 @@
 
 ### Runner
 
-- [ ] `internal/runner/concurrency.go` — Semaphore via chan struct{}, Acquire blocks (never rejects)
-- [ ] `internal/runner/workdir.go` — SafeWorkDir (os.MkdirTemp + defer Remove), StartupSweep (orphans > 10 min)
-- [ ] `internal/runner/pipeline.go` — build step → per-test run steps → status roll-up logic
-- [ ] `internal/runner/runner.go` — Runner struct, Run(ctx, RunRequest) RunResponse, wires all above
+- [x] `internal/runner/concurrency.go` — Semaphore via chan struct{}, Acquire blocks (never rejects)
+- [x] `internal/runner/workdir.go` — SafeWorkDir (os.MkdirTemp + defer Remove), StartupSweep (orphans > 10 min)
+- [x] `internal/runner/pipeline.go` — build step → per-test run steps → status roll-up logic
+- [x] `internal/runner/runner.go` — Runner struct, Run(ctx, RunRequest) RunResponse, wires all above
 
 ### Stats
 
