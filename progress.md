@@ -13,10 +13,10 @@
 
 ### Language registry
 
-- [ ] `internal/registry/language.go` — Language struct (id, name, build, run, smoke_cmd, limits)
-- [ ] `internal/registry/template.go` — Expand(args, vars): {{source}}, {{artifact}}, {{flags}}
-- [ ] `internal/registry/registry.go` — Load YAML, startup validation, Lookup(id), All()
-- [ ] `configs/languages.yaml` — py3 and cpp entries
+- [x] `internal/registry/language.go` — Language struct (id, name, build, run, smoke_cmd, limits)
+- [x] `internal/registry/template.go` — Expand(args, vars): {{source}}, {{artifact}}, {{flags}}
+- [x] `internal/registry/registry.go` — Load YAML, startup validation, Lookup(id), All()
+- [x] `configs/languages.yaml` — py3 and cpp entries
 
 ### Validation
 
