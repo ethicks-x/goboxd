@@ -1,0 +1,13 @@
+{
+  "language": "js",
+  "source": "let data = '';\nprocess.stdin.on('data', (c) => data += c);\nprocess.stdin.on('end', () => {\n  const nums = data.trim().split(/\\s+/).map(Number);\n  console.log(nums.reduce((a, b) => a + b, 0));\n});\n",
+  "source_filename": "solution.js",
+  "run": {
+    "limits": { "wall_time_s": 3, "memory_kb": 102400, "max_processes": 16 },
+    "flags": []
+  },
+  "tests": [
+    { "stdin": "1 2 3 4\n", "expected_stdout": "10\n" },
+    { "stdin": "10 32\n", "expected_stdout": "42\n" }
+  ]
+}

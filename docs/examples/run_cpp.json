@@ -1,0 +1,18 @@
+{
+  "language": "cpp",
+  "source": "#include <iostream>\nint main() {\n    int a, b;\n    std::cin >> a >> b;\n    std::cout << a + b << \"\\n\";\n}\n",
+  "source_filename": "solution.cpp",
+  "artifact_filename": "solution",
+  "build": {
+    "limits": { "wall_time_s": 5, "memory_kb": 1048576, "max_processes": 100 },
+    "flags": ["-O2", "-std=c++17"]
+  },
+  "run": {
+    "limits": { "wall_time_s": 2, "memory_kb": 262144, "max_processes": 32 },
+    "flags": []
+  },
+  "tests": [
+    { "stdin": "1 2\n", "expected_stdout": "3\n" },
+    { "stdin": "40 2\n", "expected_stdout": "42\n" }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "language": "java",
+  "source": "import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String name = sc.nextLine();\n        System.out.println(\"hello, \" + name);\n    }\n}\n",
+  "source_filename": "Solution.java",
+  "artifact_filename": "Solution",
+  "build": {
+    "limits": { "wall_time_s": 10, "memory_kb": 524288, "max_processes": 100 },
+    "flags": []
+  },
+  "run": {
+    "limits": { "wall_time_s": 5, "memory_kb": 524288, "max_processes": 64 },
+    "flags": []
+  },
+  "tests": [
+    { "stdin": "world\n", "expected_stdout": "hello, world\n" }
+  ]
+}
