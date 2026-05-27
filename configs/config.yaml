@@ -1,5 +1,5 @@
 port: 8080
-nsjail_bin: /usr/sbin/nsjail
+nsjail_bin: /usr/local/bin/nsjail
 jail_dir: /tmp/goboxd-jails
 languages_file: /configs/languages.yaml
 max_concurrent: 0          # 0 = runtime.NumCPU()

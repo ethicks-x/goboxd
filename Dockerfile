@@ -7,20 +7,15 @@ ARG NSJAIL_VERSION=3.4
 # ---- Build nsjail from source ----
 FROM debian:${DEBIAN_VERSION}-slim AS nsjail-builder
 ARG NSJAIL_VERSION
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        autoconf bison ca-certificates flex g++ gcc git libnl-route-3-dev \
-        libprotobuf-dev libtool make pkg-config protobuf-compiler \
-    && rm -rf /var/lib/apt/lists/*
-RUN git clone --depth 1 --branch ${NSJAIL_VERSION} https://github.com/google/nsjail.git /src/nsjail \
-    && make -C /src/nsjail \
-    && install -m 0755 /src/nsjail/nsjail /usr/local/bin/nsjail
+ENV NSJAIL_VERSION=${NSJAIL_VERSION}
+COPY scripts /opt/scripts
+RUN /opt/scripts/install.sh system nsjail
 
-# ---- Builder / dev image (Go + linters + nsjail) ----
+# ---- Builder / dev image (Go + linters + nsjail + language toolchains) ----
 FROM golang:${GO_VERSION}-${DEBIAN_VERSION} AS builder
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        libnl-route-3-200 libprotobuf32 \
-    && rm -rf /var/lib/apt/lists/*
+COPY scripts /opt/scripts
 COPY --from=nsjail-builder /usr/local/bin/nsjail /usr/local/bin/nsjail
+RUN /opt/scripts/install.sh nsjail-runtime langs
 RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8 \
     && go install github.com/air-verse/air@v1.61.7
 WORKDIR /src
@@ -31,11 +26,11 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/goboxd ./cmd/gobox
 
 # ---- Runtime image ----
 FROM debian:${DEBIAN_VERSION}-slim AS runtime
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates libnl-route-3-200 libprotobuf32 \
-    && rm -rf /var/lib/apt/lists/*
+COPY scripts /opt/scripts
 COPY --from=nsjail-builder /usr/local/bin/nsjail /usr/local/bin/nsjail
-COPY --from=builder        /out/goboxd          /usr/local/bin/goboxd
-COPY configs/              /configs/
+RUN /opt/scripts/install.sh all \
+    && rm -rf /opt/scripts
+COPY --from=builder /out/goboxd /usr/local/bin/goboxd
+COPY configs/      /configs/
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/goboxd"]
