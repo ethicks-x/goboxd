@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Planning and progress
+
+Before any non-trivial change, read these two files first:
+
+- `plan.md` — full architecture: package structure, design decisions, stage-switching mechanism, implementation order. Treat it as the source of truth for how the codebase should be shaped.
+- `progress.md` — checklist of every task across all three stages. **Update it immediately when a task completes** — check the box, do not batch updates.
+
+When implementing a task from `progress.md`, confirm it matches the design in `plan.md` before writing code. If a decision in `plan.md` needs to change, update `plan.md` first, then proceed.
+
 ## What this is
 
 goboxd is a hackathon submission (Paradox 2026) for a Go HTTP service that compiles/runs untrusted code inside nsjail sandboxes and returns per-test results. The full brief lives in `docs/goboxd.spec.md` — read it before any non-trivial change. It defines the `POST /run` JSON contract, the language-registry YAML shape, the seven security holes to close, the concurrency/benchmarking bar, and the judging weights. `docs/goboxd.desc.md` is the higher-level pitch.
