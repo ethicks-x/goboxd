@@ -54,9 +54,9 @@
 
 ### Dockerfile
 
-- [ ] Fix `cmd/goboxd` build path (currently broken per CLAUDE.md)
-- [ ] Install py3 and g++ in runtime stage
-- [ ] Verify `make build` and `make run` succeed
+- [x] Fix `cmd/goboxd` build path (currently broken per CLAUDE.md)
+- [x] Install py3 and g++ in runtime stage
+- [x] Verify `make build` and `make run` succeed
 
 ### Tests
 
