@@ -50,7 +50,7 @@
 
 ### Wiring
 
-- [ ] `cmd/goboxd/main.go` — wire config → registry → sandbox → runner → handlers → server
+- [x] `cmd/goboxd/main.go` — wire config → registry → sandbox → runner → handlers → server
 
 ### Dockerfile
 

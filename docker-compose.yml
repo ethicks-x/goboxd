@@ -20,6 +20,10 @@ services:
     ports:
       - "8080:8080"
     privileged: true
+    environment:
+      GOBOXD_CONFIG: /src/configs/config.yaml
+      GOBOXD_LANGUAGES_FILE: /src/configs/languages.yaml
+      GOBOXD_JAIL_DIR: /tmp/goboxd-jails
     command: air
 
   tools:
