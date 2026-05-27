@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 )
 
@@ -37,7 +36,6 @@ func (s *Server) Run() error {
 		Handler: s,
 	}
 
-	log.Println(StyledServerStart(s.port) + "\n")
 	return s.server.ListenAndServe()
 }
 

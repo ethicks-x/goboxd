@@ -15,10 +15,6 @@ var (
 	logMeth  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205"))
 )
 
-func StyledServerStart(port int) string {
-	return fmt.Sprintf("%s %s", logTitle.Render("Server starting on port"), logOK.Render(fmt.Sprintf("%d", port)))
-}
-
 func StyledServerRunning(addr string) string {
 	return fmt.Sprintf("%s %s", logOK.Render("Server is running at"), logPath.Render(addr))
 }

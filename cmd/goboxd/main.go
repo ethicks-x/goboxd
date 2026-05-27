@@ -5,9 +5,11 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
+	"github.com/ethicks-x/goboxd/internal/config"
 	"github.com/ethicks-x/goboxd/internal/handlers"
 	"github.com/ethicks-x/goboxd/internal/server"
 )
@@ -15,7 +17,13 @@ import (
 func main() {
 	log.SetFlags(0)
 
-	s := server.NewServer(8080)
+	configPath := os.Getenv("GOBOXD_CONFIG")
+	if configPath == "" {
+		configPath = "/configs/config.yaml"
+	}
+	cfg := config.Load(configPath)
+
+	s := server.NewServer(cfg.Port)
 
 	s.Use(server.LoggingMiddleware)
 	s.Use(server.RecoveryMiddleware)
@@ -36,7 +44,7 @@ func main() {
 		}
 	}()
 
-	log.Println(server.StyledServerRunning("http://localhost:8080"))
+	log.Println(server.StyledServerRunning("http://localhost:" + strconv.Itoa(cfg.Port)))
 
 	//Interrupt signal
 	<-stop

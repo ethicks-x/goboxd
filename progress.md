@@ -8,8 +8,8 @@
 
 ### Foundation
 
-- [ ] `internal/config/config.go` — Config struct, Load(), env overrides (GOBOXD_*)
-- [ ] `configs/config.yaml` — default server config (port, jail dir, max_concurrent, limits)
+- [x] `internal/config/config.go` — Config struct, Load(), env overrides (GOBOXD_*)
+- [x] `configs/config.yaml` — default server config (port, jail dir, max_concurrent, limits)
 
 ### Language registry
 

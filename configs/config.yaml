@@ -1,0 +1,13 @@
+port: 8080
+nsjail_bin: /usr/sbin/nsjail
+jail_dir: /tmp/goboxd-jails
+languages_file: /configs/languages.yaml
+max_concurrent: 0          # 0 = runtime.NumCPU()
+sandbox_backend: nsjail
+
+max_output_bytes: 1048576  # 1 MiB per build or run step
+max_request_bytes: 4194304 # 4 MiB POST body cap
+max_source_bytes: 65536    # 64 KiB source code cap
+max_tests: 50
+
+readyz_cache_ttl_s: 30
