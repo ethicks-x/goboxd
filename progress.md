@@ -26,9 +26,9 @@
 
 ### Sandbox
 
-- [ ] `internal/sandbox/sandbox.go` — Sandbox interface, BuildJob, RunJob, BuildResult, TestResult types
-- [ ] `internal/sandbox/nsjail/nsjail.go` — NsjailSandbox: argv builder, os/exec run, output cap with [truncated] marker
-- [ ] `internal/sandbox/mock/mock.go` — MockSandbox: host exec, no isolation (tests only)
+- [x] `internal/sandbox/sandbox.go` — Sandbox interface, BuildJob, RunJob, BuildResult, TestResult types
+- [x] `internal/sandbox/nsjail/nsjail.go` — NsjailSandbox: argv builder, os/exec run, output cap with [truncated] marker
+- [x] `internal/sandbox/mock/mock.go` — MockSandbox: host exec, no isolation (tests only)
 
 ### Runner
 
