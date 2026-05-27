@@ -39,7 +39,7 @@
 
 ### Stats
 
-- [ ] `internal/stats/stats.go` — atomic counters: InFlight, JobsTotal, JobsFailedInternal, LastErrorAt, DiskFree
+- [x] `internal/stats/stats.go` — atomic counters: InFlight, JobsTotal, JobsFailedInternal, LastErrorAt, DiskFree
 
 ### Handlers
 
