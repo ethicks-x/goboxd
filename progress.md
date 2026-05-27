@@ -43,10 +43,10 @@
 
 ### Handlers
 
-- [ ] `internal/handlers/health.go` — GET /healthz → 200 {"status":"ok"}
-- [ ] `internal/handlers/readyz.go` — GET /readyz → nsjail binary check + per-lang smoke probe, 30s cache
-- [ ] `internal/handlers/info.go` — GET /info → build_info, nsjail version, languages, limits, stats
-- [ ] `internal/handlers/run.go` — POST /run: MaxBytesReader, decode, validate, runner.Run, encode
+- [x] `internal/handlers/health.go` — GET /healthz → 200 {"status":"ok"}
+- [x] `internal/handlers/readyz.go` — GET /readyz → nsjail binary check + per-lang smoke probe, 30s cache
+- [x] `internal/handlers/info.go` — GET /info → build_info, nsjail version, languages, limits, stats
+- [x] `internal/handlers/run.go` — POST /run: MaxBytesReader, decode, validate, runner.Run, encode
 
 ### Wiring
 
