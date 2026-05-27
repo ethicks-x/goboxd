@@ -20,9 +20,9 @@
 
 ### Validation
 
-- [ ] `internal/validation/filename.go` — reject path separators, `..`, leading dot, length cap
-- [ ] `internal/validation/flags.go` — per-language allowlist, glob match for `-std=*`, return 400 on reject
-- [ ] `internal/validation/limits.go` — MergeLimits(request overrides, language defaults)
+- [x] `internal/validation/filename.go` — reject path separators, `..`, leading dot, length cap
+- [x] `internal/validation/flags.go` — per-language allowlist, glob match for `-std=*`, return 400 on reject
+- [x] `internal/validation/limits.go` — MergeLimits(request overrides, language defaults)
 
 ### Sandbox
 
