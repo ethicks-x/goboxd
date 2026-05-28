@@ -101,6 +101,7 @@ func (s *NsjailSandbox) baseJailArgs(workDir string, limits registry.Limits) []s
 		"--log_fd", "3",
 		"--disable_proc",
 		"--iface_no_lo",
+		"--detect_cgroupv2",
 		"--env", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		"--env", "HOME=" + workDir,
 		"--env", "LANG=C.UTF-8",
@@ -109,11 +110,13 @@ func (s *NsjailSandbox) baseJailArgs(workDir string, limits registry.Limits) []s
 		args = append(args, "--time_limit", strconv.Itoa(limits.WallTimeS))
 	}
 	if limits.MemoryKB > 0 {
-		args = append(args, "--rlimit_as", strconv.Itoa(limits.MemoryKB/1024))
+		// cgroup_mem_max caps actual RSS; rlimit_as would cap virtual address
+		// space, which V8/JVM reserve in multi-GB chunks at startup.
+		args = append(args, "--cgroup_mem_max", strconv.FormatInt(int64(limits.MemoryKB)*1024, 10))
 	}
 	if limits.MaxProcesses > 0 {
 		args = append(args, "--max_cpus", "1")
-		args = append(args, "--rlimit_nproc", strconv.Itoa(limits.MaxProcesses))
+		args = append(args, "--cgroup_pids_max", strconv.Itoa(limits.MaxProcesses))
 	}
 	return args
 }

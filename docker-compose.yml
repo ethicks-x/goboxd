@@ -8,6 +8,7 @@ services:
     ports:
       - "8080:8080"
     privileged: true
+    cgroup: host
 
   dev:
     build:
@@ -20,6 +21,7 @@ services:
     ports:
       - "8080:8080"
     privileged: true
+    cgroup: host
     environment:
       GOBOXD_CONFIG: /src/configs/config.yaml
       GOBOXD_LANGUAGES_FILE: /src/configs/languages.yaml
