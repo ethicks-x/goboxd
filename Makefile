@@ -4,7 +4,10 @@ COMPOSE ?= docker compose
 TOOLS   := $(COMPOSE) --profile tools run --rm tools
 
 build:
-	$(COMPOSE) build goboxd dev
+	$(COMPOSE) build goboxd
+
+build-dev:
+	$(COMPOSE) build dev
 
 run:
 	$(COMPOSE) up goboxd

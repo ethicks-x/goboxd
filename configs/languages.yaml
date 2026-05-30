@@ -41,6 +41,13 @@ languages:
     source_filename: Solution.java
     artifact: Solution
     smoke_cmd: [/usr/bin/java, --version]
+    # The launcher resolves its RUNPATH via $ORIGIN, which needs /proc/self/exe;
+    # the jail runs with --disable_proc, so point the loader at the JDK lib dir
+    # directly. java.security is symlinked into /etc/java-17-openjdk.
+    env:
+      LD_LIBRARY_PATH: /usr/lib/jvm/java-17-openjdk-amd64/lib
+    mounts:
+      - /etc/java-17-openjdk
     build:
       cmd: /usr/bin/javac
       args: ["{{source}}"]
@@ -64,6 +71,10 @@ languages:
     source_filename: solution.go
     artifact: solution
     smoke_cmd: [/usr/local/go/bin/go, version]
+    # `go` derives GOROOT from /proc/self/exe, which is unavailable under
+    # --disable_proc; set it explicitly so the build can find the toolchain.
+    env:
+      GOROOT: /usr/local/go
     build:
       cmd: /usr/local/go/bin/go
       args: ["build", "-o", "{{artifact}}", "{{source}}"]

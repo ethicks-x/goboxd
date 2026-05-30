@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -15,9 +16,30 @@ import (
 )
 
 const (
-	maxOutputBytes = 1 << 20 // 1 MiB per stream
+	maxOutputBytes  = 1 << 20 // 1 MiB per stream
 	truncatedMarker = "\n[truncated]"
+
+	// nsjail's default RLIMIT_NOFILE (32) and RLIMIT_FSIZE (1 MiB) are far too
+	// small for real toolchains: the Go compiler exhausts 32 descriptors and
+	// emits archives larger than 1 MiB. Real memory is capped per-job via
+	// --cgroup_mem_max, so these rlimits exist only to keep the toolchains
+	// functional, not as the memory boundary.
+	maxOpenFiles = 1024
+	maxFsizeMB   = 256
 )
+
+// deviceMounts are the /dev nodes bind-mounted into every jail. With a fresh
+// tmpfs root (no --chroot) /dev is otherwise empty; the Go build's tool
+// invocations need /dev/null, and runtimes seed their RNG from /dev/urandom.
+var deviceMounts = []struct {
+	path string
+	rw   bool
+}{
+	{"/dev/null", true},
+	{"/dev/zero", true},
+	{"/dev/urandom", false},
+	{"/dev/random", false},
+}
 
 // NsjailSandbox runs jobs inside nsjail.
 type NsjailSandbox struct {
@@ -35,7 +57,7 @@ func (s *NsjailSandbox) Build(ctx context.Context, job sandbox.BuildJob) sandbox
 		return sandbox.BuildResult{OK: true}
 	}
 
-	args := s.buildArgv(job.WorkDir, job.Language.Build, job.Limits, job.Flags, job.Filename, job.Artifact)
+	args := s.buildArgv(job.WorkDir, job.Language, job.Limits, job.Flags, job.Filename, job.Artifact)
 	stdout, stderr, dur, err := s.runCmd(ctx, args, "", job.WorkDir)
 	if err != nil {
 		if isInfraErr(err) {
@@ -57,8 +79,9 @@ func (s *NsjailSandbox) Run(ctx context.Context, job sandbox.RunJob) sandbox.Tes
 }
 
 // buildArgv constructs the nsjail + compiler argv for a build step.
-func (s *NsjailSandbox) buildArgv(workDir string, spec *registry.CommandSpec, limits registry.Limits, flags []string, source, artifact string) []string {
-	jail := s.baseJailArgs(workDir, limits)
+func (s *NsjailSandbox) buildArgv(workDir string, lang *registry.Language, limits registry.Limits, flags []string, source, artifact string) []string {
+	spec := lang.Build
+	jail := s.baseJailArgs(workDir, limits, lang.Env, lang.Mounts)
 	jail = append(jail, "--", expandTemplate(spec.Cmd, source, artifact))
 	for _, a := range spec.Args {
 		switch a {
@@ -74,7 +97,7 @@ func (s *NsjailSandbox) buildArgv(workDir string, spec *registry.CommandSpec, li
 // runArgv constructs the nsjail + runtime argv for a run step.
 func (s *NsjailSandbox) runArgv(workDir string, lang *registry.Language, limits registry.Limits, flags []string, artifact string) []string {
 	spec := lang.Run
-	jail := s.baseJailArgs(workDir, limits)
+	jail := s.baseJailArgs(workDir, limits, lang.Env, lang.Mounts)
 	cmd := expandTemplate(spec.Cmd, artifact, artifact)
 	if !strings.HasPrefix(cmd, "/") {
 		cmd = "./" + cmd
@@ -107,10 +130,11 @@ var systemMountsRO = []string{
 	"/etc/ssl",          // TLS roots, for languages linked against OpenSSL
 }
 
-func (s *NsjailSandbox) baseJailArgs(workDir string, limits registry.Limits) []string {
-	// No --chroot: nsjail mounts a fresh tmpfs as the jail root and we bind in
+func (s *NsjailSandbox) baseJailArgs(workDir string, limits registry.Limits, extraEnv map[string]string, extraMounts []string) []string {
+	// No --chroot: nsjail builds a fresh tmpfs as the jail root and we bind in
 	// only what the toolchains need. Chrooting to "/" would expose the whole
-	// container filesystem to untrusted code.
+	// container filesystem (/home, /root, /etc/shadow, and other requests'
+	// work directories) to untrusted code.
 	args := []string{
 		s.nsjailBin,
 		"--mode", "o",
@@ -118,8 +142,30 @@ func (s *NsjailSandbox) baseJailArgs(workDir string, limits registry.Limits) []s
 		"--disable_proc",
 		"--iface_no_lo",
 		"--detect_cgroupv2",
+		"--rlimit_nofile", strconv.Itoa(maxOpenFiles),
+		"--rlimit_fsize", strconv.Itoa(maxFsizeMB),
+		// Virtual address space is left unbounded: the JVM and V8 reserve
+		// multi-GB regions at startup that never become resident. Real memory
+		// is capped by --cgroup_mem_max below.
+		"--rlimit_as", "max",
 	}
 	for _, p := range systemMountsRO {
+		if _, err := os.Stat(p); err == nil {
+			args = append(args, "--bindmount_ro", p)
+		}
+	}
+	for _, d := range deviceMounts {
+		if _, err := os.Stat(d.path); err != nil {
+			continue
+		}
+		if d.rw {
+			args = append(args, "--bindmount", d.path)
+		} else {
+			args = append(args, "--bindmount_ro", d.path)
+		}
+	}
+	// Per-language read-only mounts (e.g. Java's /etc/java-17-openjdk).
+	for _, p := range extraMounts {
 		if _, err := os.Stat(p); err == nil {
 			args = append(args, "--bindmount_ro", p)
 		}
@@ -133,6 +179,10 @@ func (s *NsjailSandbox) baseJailArgs(workDir string, limits registry.Limits) []s
 		"--env", "TMPDIR="+workDir,
 		"--env", "LANG=C.UTF-8",
 	)
+	// Per-language env (e.g. GOROOT, LD_LIBRARY_PATH), sorted for a stable argv.
+	for _, k := range sortedKeys(extraEnv) {
+		args = append(args, "--env", k+"="+extraEnv[k])
+	}
 	if limits.WallTimeS > 0 {
 		args = append(args, "--time_limit", strconv.Itoa(limits.WallTimeS))
 	}
@@ -211,6 +261,17 @@ func (w *limitedWriter) Write(p []byte) (int, error) {
 type devNullWriter struct{}
 
 func (devNullWriter) Write(p []byte) (int, error) { return len(p), nil }
+
+// sortedKeys returns the keys of m in lexical order, so env flags land in a
+// deterministic order in the argv.
+func sortedKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
 
 // expandTemplate substitutes {{source}} and {{artifact}} placeholders with the
 // corresponding filenames. Filenames are resolved relative to the workdir (the
