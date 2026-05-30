@@ -91,21 +91,48 @@ func (s *NsjailSandbox) runArgv(workDir string, lang *registry.Language, limits 
 	return jail
 }
 
+// systemMountsRO are host paths bind-mounted read-only into every jail. They
+// give the toolchains their interpreters, shared libraries, and loader cache
+// without exposing the rest of the host filesystem (notably /home, /root, and
+// /etc/shadow, which must stay invisible). Paths absent on a given image are
+// skipped, since nsjail aborts when a bindmount source does not exist.
+var systemMountsRO = []string{
+	"/usr",
+	"/bin",
+	"/sbin",
+	"/lib",
+	"/lib64",
+	"/etc/ld.so.cache",  // loader cache; without it glibc cannot locate libc.so.6
+	"/etc/alternatives", // /usr/bin/{java,javac,...} are symlinks routed through here
+	"/etc/ssl",          // TLS roots, for languages linked against OpenSSL
+}
+
 func (s *NsjailSandbox) baseJailArgs(workDir string, limits registry.Limits) []string {
+	// No --chroot: nsjail mounts a fresh tmpfs as the jail root and we bind in
+	// only what the toolchains need. Chrooting to "/" would expose the whole
+	// container filesystem to untrusted code.
 	args := []string{
 		s.nsjailBin,
 		"--mode", "o",
-		"--chroot", "/",
-		"--bindmount", workDir + ":" + workDir,
-		"--cwd", workDir,
 		"--log_fd", "3",
 		"--disable_proc",
 		"--iface_no_lo",
 		"--detect_cgroupv2",
-		"--env", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-		"--env", "HOME=" + workDir,
-		"--env", "LANG=C.UTF-8",
 	}
+	for _, p := range systemMountsRO {
+		if _, err := os.Stat(p); err == nil {
+			args = append(args, "--bindmount_ro", p)
+		}
+	}
+	// The per-request work directory is the only writable location in the jail.
+	args = append(args,
+		"--bindmount", workDir+":"+workDir,
+		"--cwd", workDir,
+		"--env", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+		"--env", "HOME="+workDir,
+		"--env", "TMPDIR="+workDir,
+		"--env", "LANG=C.UTF-8",
+	)
 	if limits.WallTimeS > 0 {
 		args = append(args, "--time_limit", strconv.Itoa(limits.WallTimeS))
 	}
