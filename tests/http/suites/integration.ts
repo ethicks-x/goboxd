@@ -67,6 +67,11 @@ function buildFailureCase(lang: Lang): Case | null {
       source_filename: "Solution.java",
       artifact_filename: "Solution",
     },
+    go: {
+      source: "package main\nthis is not valid go",
+      source_filename: "solution.go",
+      artifact_filename: "solution",
+    },
   };
   const b = broken[lang];
   if (!b) return null;
@@ -101,6 +106,11 @@ function runtimeErrorCase(lang: Lang): Case | null {
       source_filename: "Solution.java",
       artifact_filename: "Solution",
     },
+    go: {
+      source: 'package main\nimport "os"\nfunc main(){os.Exit(1)}',
+      source_filename: "solution.go",
+      artifact_filename: "solution",
+    },
   };
   const s = crash[lang];
   if (!s) return null;
@@ -131,6 +141,11 @@ function timeExceededCase(lang: Lang): Case | null {
         'public class Solution{public static void main(String[]a){while(true){}}}',
       source_filename: "Solution.java",
       artifact_filename: "Solution",
+    },
+    go: {
+      source: "package main\nfunc main(){for{}}",
+      source_filename: "solution.go",
+      artifact_filename: "solution",
     },
   };
   const s = inf[lang];

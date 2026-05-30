@@ -2,7 +2,7 @@
 // Per-language source snippets shared by integration and corpus suites.
 // Each program has a deterministic spec: given stdin, produce expected_stdout.
 
-export type Lang = "py3" | "cpp" | "c" | "java" | "js";
+export type Lang = "py3" | "cpp" | "c" | "java" | "js" | "go";
 
 export type LangSource = {
   language: Lang;
@@ -41,6 +41,12 @@ const hello: Program = {
       artifact_filename: "Solution",
     },
     js: { language: "js", source: "process.stdout.write('hi')" },
+    go: {
+      language: "go",
+      source: 'package main\nimport "fmt"\nfunc main(){fmt.Print("hi")}',
+      source_filename: "solution.go",
+      artifact_filename: "solution",
+    },
   },
 };
 
@@ -79,6 +85,13 @@ const echoUpper: Program = {
       source:
         "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>process.stdout.write(d.toUpperCase()))",
     },
+    go: {
+      language: "go",
+      source:
+        'package main\nimport("io";"os";"strings")\nfunc main(){b,_:=io.ReadAll(os.Stdin);os.Stdout.WriteString(strings.ToUpper(string(b)))}',
+      source_filename: "solution.go",
+      artifact_filename: "solution",
+    },
   },
 };
 
@@ -112,6 +125,13 @@ const sumTwo: Program = {
       language: "js",
       source:
         "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const[a,b]=d.trim().split(/\\s+/).map(Number);process.stdout.write(String(a+b))})",
+    },
+    go: {
+      language: "go",
+      source:
+        'package main\nimport "fmt"\nfunc main(){var a,b int64;fmt.Scan(&a,&b);fmt.Print(a+b)}',
+      source_filename: "solution.go",
+      artifact_filename: "solution",
     },
   },
 };
@@ -151,6 +171,13 @@ const factorial: Program = {
       source:
         "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{let n=parseInt(d),r=1n;for(let i=2n;i<=BigInt(n);i++)r*=i;process.stdout.write(r.toString())})",
     },
+    go: {
+      language: "go",
+      source:
+        'package main\nimport "fmt"\nfunc main(){var n int64;fmt.Scan(&n);r:=int64(1);for i:=int64(2);i<=n;i++{r*=i};fmt.Print(r)}',
+      source_filename: "solution.go",
+      artifact_filename: "solution",
+    },
   },
 };
 
@@ -182,6 +209,13 @@ const reverse: Program = {
       language: "js",
       source:
         "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>process.stdout.write(d.split('').reverse().join('')))",
+    },
+    go: {
+      language: "go",
+      source:
+        'package main\nimport("io";"os")\nfunc main(){b,_:=io.ReadAll(os.Stdin);for i:=len(b)-1;i>=0;i--{os.Stdout.Write(b[i:i+1])}}',
+      source_filename: "solution.go",
+      artifact_filename: "solution",
     },
   },
 };
@@ -221,6 +255,13 @@ const vowels: Program = {
       source:
         "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{let n=0;for(const c of d)if('aeiou'.includes(c))n++;process.stdout.write(String(n))})",
     },
+    go: {
+      language: "go",
+      source:
+        "package main\nimport(\"fmt\";\"io\";\"os\")\nfunc main(){b,_:=io.ReadAll(os.Stdin);n:=0;for _,c:=range b{switch c{case 'a','e','i','o','u':n++}};fmt.Print(n)}",
+      source_filename: "solution.go",
+      artifact_filename: "solution",
+    },
   },
 };
 
@@ -258,6 +299,13 @@ const palindrome: Program = {
       language: "js",
       source:
         "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const r=d.split('').reverse().join('');process.stdout.write(d===r?'yes':'no')})",
+    },
+    go: {
+      language: "go",
+      source:
+        'package main\nimport("fmt";"io";"os")\nfunc main(){b,_:=io.ReadAll(os.Stdin);ok:=true;for i,j:=0,len(b)-1;i<j;i,j=i+1,j-1{if b[i]!=b[j]{ok=false;break}};if ok{fmt.Print("yes")}else{fmt.Print("no")}}',
+      source_filename: "solution.go",
+      artifact_filename: "solution",
     },
   },
 };
@@ -300,6 +348,13 @@ const fizzbuzz: Program = {
       source:
         "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const n=parseInt(d);let o='';for(let i=1;i<=n;i++){if(i%15===0)o+='FizzBuzz';else if(i%3===0)o+='Fizz';else if(i%5===0)o+='Buzz';else o+=i;o+='\\n'}process.stdout.write(o)})",
     },
+    go: {
+      language: "go",
+      source:
+        'package main\nimport "fmt"\nfunc main(){var n int;fmt.Scan(&n);for i:=1;i<=n;i++{if i%15==0{fmt.Println("FizzBuzz")}else if i%3==0{fmt.Println("Fizz")}else if i%5==0{fmt.Println("Buzz")}else{fmt.Println(i)}}}',
+      source_filename: "solution.go",
+      artifact_filename: "solution",
+    },
   },
 };
 
@@ -314,4 +369,4 @@ export const PROGRAMS: Program[] = [
   fizzbuzz,
 ];
 
-export const LANGS: Lang[] = ["py3", "cpp", "c", "java", "js"];
+export const LANGS: Lang[] = ["py3", "cpp", "c", "java", "js", "go"];
