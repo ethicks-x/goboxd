@@ -72,6 +72,11 @@ function buildFailureCase(lang: Lang): Case | null {
       source_filename: "solution.go",
       artifact_filename: "solution",
     },
+    rust: {
+      source: "fn main() { this is not valid rust }",
+      source_filename: "solution.rs",
+      artifact_filename: "solution",
+    },
   };
   const b = broken[lang];
   if (!b) return null;
@@ -111,6 +116,11 @@ function runtimeErrorCase(lang: Lang): Case | null {
       source_filename: "solution.go",
       artifact_filename: "solution",
     },
+    rust: {
+      source: "fn main(){std::process::exit(1);}",
+      source_filename: "solution.rs",
+      artifact_filename: "solution",
+    },
   };
   const s = crash[lang];
   if (!s) return null;
@@ -145,6 +155,11 @@ function timeExceededCase(lang: Lang): Case | null {
     go: {
       source: "package main\nfunc main(){for{}}",
       source_filename: "solution.go",
+      artifact_filename: "solution",
+    },
+    rust: {
+      source: "fn main(){loop{}}",
+      source_filename: "solution.rs",
       artifact_filename: "solution",
     },
   };

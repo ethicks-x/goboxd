@@ -2,7 +2,7 @@
 // Per-language source snippets shared by integration and corpus suites.
 // Each program has a deterministic spec: given stdin, produce expected_stdout.
 
-export type Lang = "py3" | "cpp" | "c" | "java" | "js" | "go";
+export type Lang = "py3" | "cpp" | "c" | "java" | "js" | "go" | "rust";
 
 export type LangSource = {
   language: Lang;
@@ -45,6 +45,12 @@ const hello: Program = {
       language: "go",
       source: 'package main\nimport "fmt"\nfunc main(){fmt.Print("hi")}',
       source_filename: "solution.go",
+      artifact_filename: "solution",
+    },
+    rust: {
+      language: "rust",
+      source: 'fn main(){print!("hi");}',
+      source_filename: "solution.rs",
       artifact_filename: "solution",
     },
   },
@@ -92,6 +98,13 @@ const echoUpper: Program = {
       source_filename: "solution.go",
       artifact_filename: "solution",
     },
+    rust: {
+      language: "rust",
+      source:
+        'use std::io::Read;fn main(){let mut s=String::new();std::io::stdin().read_to_string(&mut s).unwrap();print!("{}",s.to_uppercase());}',
+      source_filename: "solution.rs",
+      artifact_filename: "solution",
+    },
   },
 };
 
@@ -131,6 +144,13 @@ const sumTwo: Program = {
       source:
         'package main\nimport "fmt"\nfunc main(){var a,b int64;fmt.Scan(&a,&b);fmt.Print(a+b)}',
       source_filename: "solution.go",
+      artifact_filename: "solution",
+    },
+    rust: {
+      language: "rust",
+      source:
+        'use std::io::Read;fn main(){let mut s=String::new();std::io::stdin().read_to_string(&mut s).unwrap();let v:Vec<i64>=s.split_whitespace().map(|x|x.parse().unwrap()).collect();print!("{}",v[0]+v[1]);}',
+      source_filename: "solution.rs",
       artifact_filename: "solution",
     },
   },
@@ -178,6 +198,13 @@ const factorial: Program = {
       source_filename: "solution.go",
       artifact_filename: "solution",
     },
+    rust: {
+      language: "rust",
+      source:
+        'use std::io::Read;fn main(){let mut s=String::new();std::io::stdin().read_to_string(&mut s).unwrap();let n:u64=s.trim().parse().unwrap();let mut r:u64=1;for i in 2..=n{r*=i;}print!("{}",r);}',
+      source_filename: "solution.rs",
+      artifact_filename: "solution",
+    },
   },
 };
 
@@ -215,6 +242,13 @@ const reverse: Program = {
       source:
         'package main\nimport("io";"os")\nfunc main(){b,_:=io.ReadAll(os.Stdin);for i:=len(b)-1;i>=0;i--{os.Stdout.Write(b[i:i+1])}}',
       source_filename: "solution.go",
+      artifact_filename: "solution",
+    },
+    rust: {
+      language: "rust",
+      source:
+        'use std::io::Read;fn main(){let mut s=String::new();std::io::stdin().read_to_string(&mut s).unwrap();let r:String=s.chars().rev().collect();print!("{}",r);}',
+      source_filename: "solution.rs",
       artifact_filename: "solution",
     },
   },
@@ -262,6 +296,13 @@ const vowels: Program = {
       source_filename: "solution.go",
       artifact_filename: "solution",
     },
+    rust: {
+      language: "rust",
+      source:
+        'use std::io::Read;fn main(){let mut s=String::new();std::io::stdin().read_to_string(&mut s).unwrap();let n=s.chars().filter(|c|"aeiou".contains(*c)).count();print!("{}",n);}',
+      source_filename: "solution.rs",
+      artifact_filename: "solution",
+    },
   },
 };
 
@@ -305,6 +346,13 @@ const palindrome: Program = {
       source:
         'package main\nimport("fmt";"io";"os")\nfunc main(){b,_:=io.ReadAll(os.Stdin);ok:=true;for i,j:=0,len(b)-1;i<j;i,j=i+1,j-1{if b[i]!=b[j]{ok=false;break}};if ok{fmt.Print("yes")}else{fmt.Print("no")}}',
       source_filename: "solution.go",
+      artifact_filename: "solution",
+    },
+    rust: {
+      language: "rust",
+      source:
+        'use std::io::Read;fn main(){let mut s=String::new();std::io::stdin().read_to_string(&mut s).unwrap();let r:String=s.chars().rev().collect();print!("{}",if s==r{"yes"}else{"no"});}',
+      source_filename: "solution.rs",
       artifact_filename: "solution",
     },
   },
@@ -355,6 +403,13 @@ const fizzbuzz: Program = {
       source_filename: "solution.go",
       artifact_filename: "solution",
     },
+    rust: {
+      language: "rust",
+      source:
+        'use std::io::Read;fn main(){let mut s=String::new();std::io::stdin().read_to_string(&mut s).unwrap();let n:i64=s.trim().parse().unwrap();let mut o=String::new();for i in 1..=n{if i%15==0{o.push_str("FizzBuzz")}else if i%3==0{o.push_str("Fizz")}else if i%5==0{o.push_str("Buzz")}else{o.push_str(&i.to_string())};o.push(\'\\n\');}print!("{}",o);}',
+      source_filename: "solution.rs",
+      artifact_filename: "solution",
+    },
   },
 };
 
@@ -369,4 +424,4 @@ export const PROGRAMS: Program[] = [
   fizzbuzz,
 ];
 
-export const LANGS: Lang[] = ["py3", "cpp", "c", "java", "js", "go"];
+export const LANGS: Lang[] = ["py3", "cpp", "c", "java", "js", "go", "rust"];

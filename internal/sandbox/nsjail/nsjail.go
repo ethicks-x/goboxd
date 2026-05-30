@@ -123,6 +123,7 @@ var systemMountsRO = []string{
 	"/usr",
 	"/bin",
 	"/sbin",
+	"/proc",
 	"/lib",
 	"/lib64",
 	"/etc/ld.so.cache",  // loader cache; without it glibc cannot locate libc.so.6

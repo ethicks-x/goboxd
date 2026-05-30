@@ -82,4 +82,20 @@ languages:
     run:
       cmd: "{{artifact}}"
       limits: { wall_time_s: 5, memory_kb: 524288, max_processes: 64 }
-  
+
+  - id: rust
+    name: Rust
+    source_filename: solution.rs
+    artifact: solution
+    smoke_cmd: [/usr/bin/rustc, --version]
+    # rustc derives its sysroot from /proc/self/exe, which is unavailable under
+    # --disable_proc; pass --sysroot explicitly so it can find libstd. The
+    # linker (cc) is resolved via PATH and lives in the read-only /usr mount.
+    build:
+      cmd: /usr/bin/rustc
+      args: ["--sysroot=/usr", "{{flags}}", "-o", "{{artifact}}", "{{source}}"]
+      limits: { wall_time_s: 10, memory_kb: 1048576, max_processes: 100 }
+      flag_allowlist: ["-O", "--edition=*", "-C", "opt-level=*"]
+    run:
+      cmd: "{{artifact}}"
+      limits: { wall_time_s: 3, memory_kb: 524288, max_processes: 64 }
