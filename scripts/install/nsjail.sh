@@ -9,6 +9,7 @@ SRC_DIR="${NSJAIL_SRC_DIR:-/tmp/nsjail}"
 
 section "nsjail build deps"
 apt_install \
+    ca-certificates \
     autoconf \
     bison \
     flex \

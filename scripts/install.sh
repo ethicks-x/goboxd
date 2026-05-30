@@ -31,6 +31,9 @@ run_section() {
     esac
 }
 
+# echo "deb https://ftp.iitm.ac.in/debian bookworm main" > /etc/apt/sources.list
+# apt-get update
+
 for t in $TARGETS; do
     run_section "$t"
 done

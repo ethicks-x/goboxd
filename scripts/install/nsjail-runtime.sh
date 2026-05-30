@@ -6,6 +6,7 @@ set -euo pipefail
 
 section "nsjail runtime libs"
 apt_install \
+    ca-certificates \
     libnl-route-3-200 \
     libprotobuf32
 
