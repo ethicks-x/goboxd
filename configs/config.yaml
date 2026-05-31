@@ -11,3 +11,11 @@ max_source_bytes: 65536    # 64 KiB source code cap
 max_tests: 50
 
 readyz_cache_ttl_s: 30
+
+cors:
+  enabled: true
+  allowed_origins: ["*"]          # exact origins, or ["*"] for any
+  allowed_methods: ["GET", "POST", "OPTIONS"]
+  allowed_headers: ["Content-Type", "Authorization"]
+  allow_credentials: false        # "*" origin is echoed per-request when true
+  max_age_s: 86400                # preflight cache lifetime

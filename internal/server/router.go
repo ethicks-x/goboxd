@@ -52,8 +52,9 @@ func (r *Router) DELETE(path string, handler Handler) {
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	handler, err := r.findHandler(req.Method, req.URL.Path)
 	if err != nil {
-		r.notFoundHandler(w, req)
-		return
+		// Run middleware on the not-found path too, so cross-cutting concerns
+		// (CORS preflight, logging) still apply to unmatched routes.
+		handler = r.notFoundHandler
 	}
 	if r.server != nil {
 		handler = r.server.ApplyMiddleware(handler)

@@ -16,6 +16,16 @@ type Limits struct {
 	MaxProcesses int `yaml:"max_processes"`
 }
 
+// CORS controls cross-origin resource sharing headers.
+type CORS struct {
+	Enabled          bool     `yaml:"enabled"`
+	AllowedOrigins   []string `yaml:"allowed_origins"`
+	AllowedMethods   []string `yaml:"allowed_methods"`
+	AllowedHeaders   []string `yaml:"allowed_headers"`
+	AllowCredentials bool     `yaml:"allow_credentials"`
+	MaxAgeS          int      `yaml:"max_age_s"`
+}
+
 // Config is the top-level server configuration.
 type Config struct {
 	Port           int    `yaml:"port"`
@@ -24,6 +34,9 @@ type Config struct {
 	LanguagesFile  string `yaml:"languages_file"`
 	MaxConcurrent  int    `yaml:"max_concurrent"`
 	SandboxBackend string `yaml:"sandbox_backend"`
+
+	// Cross-origin resource sharing policy.
+	CORS CORS `yaml:"cors"`
 
 	// Global output cap applied to every sandbox run (build + test).
 	MaxOutputBytes int64 `yaml:"max_output_bytes"`
@@ -52,6 +65,13 @@ func defaults() Config {
 		MaxSourceBytes:  65536,
 		MaxTests:        50,
 		ReadyzCacheTTLS: 30,
+		CORS: CORS{
+			Enabled:        true,
+			AllowedOrigins: []string{"*"},
+			AllowedMethods: []string{"GET", "POST", "OPTIONS"},
+			AllowedHeaders: []string{"Content-Type", "Authorization"},
+			MaxAgeS:        86400,
+		},
 	}
 }
 

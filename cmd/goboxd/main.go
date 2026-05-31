@@ -49,6 +49,15 @@ func main() {
 	prober := runner.NewProber(cfg.NsjailBin, reg, cfg.ReadyzCacheTTL)
 
 	s := server.NewServer(cfg.Port)
+	if cfg.CORS.Enabled {
+		s.Use(server.CORSMiddleware(server.CORSOptions{
+			AllowedOrigins:   cfg.CORS.AllowedOrigins,
+			AllowedMethods:   cfg.CORS.AllowedMethods,
+			AllowedHeaders:   cfg.CORS.AllowedHeaders,
+			AllowCredentials: cfg.CORS.AllowCredentials,
+			MaxAgeS:          cfg.CORS.MaxAgeS,
+		}))
+	}
 	s.Use(server.LoggingMiddleware)
 	s.Use(server.RecoveryMiddleware)
 
