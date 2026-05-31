@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Corpus suite: every PROGRAMS × LANGS combination as accepted runs.
-// 8 programs × 5 languages = 40 cases. Mostly counting/string work.
+// Mostly counting/string work; case count is programs × languages.
 
 import { Case, Suite } from "../lib/types";
 import { runCases, summarize } from "../lib/runner";

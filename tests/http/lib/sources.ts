@@ -2,7 +2,7 @@
 // Per-language source snippets shared by integration and corpus suites.
 // Each program has a deterministic spec: given stdin, produce expected_stdout.
 
-export type Lang = "py3" | "cpp" | "c" | "java" | "js" | "go" | "rust";
+export type Lang = "py3" | "cpp" | "c" | "java" | "js" | "go" | "rust" | "bash";
 
 export type LangSource = {
   language: Lang;
@@ -25,6 +25,7 @@ const hello: Program = {
   cases: [{ stdin: "", expected_stdout: "hi" }],
   by: {
     py3: { language: "py3", source: "import sys; sys.stdout.write('hi')" },
+    bash: { language: "bash", source: "printf 'hi'" },
     cpp: {
       language: "cpp",
       source: '#include <iostream>\nint main(){std::cout<<"hi";return 0;}',
@@ -69,6 +70,7 @@ const echoUpper: Program = {
       language: "py3",
       source: "import sys\nsys.stdout.write(sys.stdin.read().upper())",
     },
+    bash: { language: "bash", source: "tr '[:lower:]' '[:upper:]'" },
     cpp: {
       language: "cpp",
       source:
@@ -118,6 +120,7 @@ const sumTwo: Program = {
   ],
   by: {
     py3: { language: "py3", source: "a,b=map(int,input().split());print(a+b,end='')" },
+    bash: { language: "bash", source: "read a b; printf '%d' \"$((a + b))\"" },
     cpp: {
       language: "cpp",
       source:
@@ -169,6 +172,11 @@ const factorial: Program = {
       language: "py3",
       source: "n=int(input());import math;print(math.factorial(n),end='')",
     },
+    bash: {
+      language: "bash",
+      source:
+        "read n; r=1; for((i=2;i<=n;i++)); do r=$((r*i)); done; printf '%d' \"$r\"",
+    },
     cpp: {
       language: "cpp",
       source:
@@ -215,6 +223,11 @@ const reverse: Program = {
   cases: [{ stdin: "hello", expected_stdout: "olleh" }],
   by: {
     py3: { language: "py3", source: "import sys;sys.stdout.write(sys.stdin.read()[::-1])" },
+    bash: {
+      language: "bash",
+      source:
+        's=$(cat); out=""; for((i=${#s}-1;i>=0;i--)); do out+="${s:i:1}"; done; printf "%s" "$out"',
+    },
     cpp: {
       language: "cpp",
       source:
@@ -267,6 +280,11 @@ const vowels: Program = {
       language: "py3",
       source: "import sys;s=sys.stdin.read();print(sum(c in 'aeiou' for c in s),end='')",
     },
+    bash: {
+      language: "bash",
+      source:
+        's=$(cat); n=0; for((i=0;i<${#s};i++)); do case "${s:i:1}" in [aeiou]) n=$((n+1));; esac; done; printf "%d" "$n"',
+    },
     cpp: {
       language: "cpp",
       source:
@@ -318,6 +336,11 @@ const palindrome: Program = {
     py3: {
       language: "py3",
       source: "import sys;s=sys.stdin.read();print('yes' if s==s[::-1] else 'no',end='')",
+    },
+    bash: {
+      language: "bash",
+      source:
+        's=$(cat); r=""; for((i=${#s}-1;i>=0;i--)); do r+="${s:i:1}"; done; if [ "$s" = "$r" ]; then printf "yes"; else printf "no"; fi',
     },
     cpp: {
       language: "cpp",
@@ -374,6 +397,11 @@ const fizzbuzz: Program = {
       source:
         "n=int(input())\nfor i in range(1,n+1):\n  if i%15==0:print('FizzBuzz')\n  elif i%3==0:print('Fizz')\n  elif i%5==0:print('Buzz')\n  else:print(i)\n",
     },
+    bash: {
+      language: "bash",
+      source:
+        'read n; for((i=1;i<=n;i++)); do if((i%15==0)); then echo FizzBuzz; elif((i%3==0)); then echo Fizz; elif((i%5==0)); then echo Buzz; else echo "$i"; fi; done',
+    },
     cpp: {
       language: "cpp",
       source:
@@ -424,4 +452,4 @@ export const PROGRAMS: Program[] = [
   fizzbuzz,
 ];
 
-export const LANGS: Lang[] = ["py3", "cpp", "c", "java", "js", "go", "rust"];
+export const LANGS: Lang[] = ["py3", "cpp", "c", "java", "js", "go", "rust", "bash"];

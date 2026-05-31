@@ -36,6 +36,15 @@ languages:
       args: ["{{source}}"]
       limits: { wall_time_s: 9, memory_kb: 102400, max_processes: 100 }
 
+  - id: bash
+    name: Bash
+    source_filename: solution.sh
+    smoke_cmd: [/bin/bash, --version]
+    run:
+      cmd: /bin/bash
+      args: ["{{source}}"]
+      limits: { wall_time_s: 9, memory_kb: 102400, max_processes: 100 }
+
   - id: java
     name: Java
     source_filename: Solution.java
@@ -99,3 +108,21 @@ languages:
     run:
       cmd: "{{artifact}}"
       limits: { wall_time_s: 3, memory_kb: 524288, max_processes: 64 }
+
+  - id: verilog
+    name: Verilog
+    source_filename: solution.v
+    artifact: solution.vvp
+    smoke_cmd: [/usr/bin/iverilog, -V]
+    # iverilog compiles the source to a vvp bytecode file; vvp then interprets
+    # it. Both binaries resolve their backend (ivlpp, the code generators) and
+    # the VPI system modules from a compiled-in prefix under /usr, which is
+    # bind-mounted read-only into the jail, so no extra env/mounts are needed.
+    build:
+      cmd: /usr/bin/iverilog
+      args: ["-o", "{{artifact}}", "{{source}}"]
+      limits: { wall_time_s: 10, memory_kb: 524288, max_processes: 100 }
+    run:
+      cmd: /usr/bin/vvp
+      args: ["{{artifact}}"]
+      limits: { wall_time_s: 5, memory_kb: 524288, max_processes: 64 }

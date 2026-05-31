@@ -79,10 +79,10 @@
 
 > No Go code changes. YAML edits and Dockerfile installs only.
 
-- [ ] `configs/languages.yaml` — add: c, java, bash, node, verilog
-- [ ] `Dockerfile` — install: gcc, openjdk, bash (already present), nodejs, iverilog
+- [x] `configs/languages.yaml` — add: c, java, bash, node, verilog
+- [x] `Dockerfile` — install: gcc, openjdk, bash (already present), nodejs, iverilog (bash + iverilog via `scripts/lang_install/`)
 - [ ] Smoke-test each new language via `/readyz`
-- [ ] `tests/integration/run_test.go` — add one test per new language
+- [ ] `tests/integration/run_test.go` — add one test per new language (bash, verilog done; c/java/node pending)
 - [ ] `docs/languages.md` — per-language notes: filename rules, flag allowlist, limits
 
 ---

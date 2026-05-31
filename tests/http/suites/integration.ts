@@ -101,6 +101,7 @@ function runtimeErrorCase(lang: Lang): Case | null {
   const crash: Partial<Record<Lang, { source: string; source_filename?: string; artifact_filename?: string }>> = {
     py3: { source: "raise SystemExit(1)" },
     js: { source: "process.exit(1)" },
+    bash: { source: "exit 1" },
     cpp: {
       source: "#include <cstdlib>\nint main(){return 1;}",
     },
@@ -144,6 +145,7 @@ function timeExceededCase(lang: Lang): Case | null {
   const inf: Partial<Record<Lang, { source: string; source_filename?: string; artifact_filename?: string }>> = {
     py3: { source: "while True: pass" },
     js: { source: "while(true){}" },
+    bash: { source: "while true; do :; done" },
     cpp: { source: "int main(){while(1){}return 0;}" },
     c: { source: "int main(){while(1){}return 0;}" },
     java: {

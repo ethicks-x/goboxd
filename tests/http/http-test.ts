@@ -7,7 +7,8 @@
 // Suites:
 //   unit          health/info/readyz endpoints, /run payload validation, error contracts
 //   integration   end-to-end per-language: happy path, echo, wrong output, build fail, runtime, timeout
-//   corpus        40-case correctness corpus across all languages
+//   corpus        correctness corpus across all languages
+//   verilog       Icarus Verilog: self-contained simulations + build failure
 //   load          concurrency, queue, latency, OOM, output cap
 //   security      the 7 holes from docs/goboxd.spec.md + sandbox containment
 //   all           runs every suite in order
@@ -31,15 +32,17 @@ import { integrationSuite } from "./suites/integration";
 import { corpusSuite } from "./suites/corpus";
 import { loadSuite } from "./suites/load";
 import { securitySuite } from "./suites/security";
+import { verilogSuite } from "./suites/verilog";
 
 const SUITES: Record<string, Suite> = {
   unit: unitSuite,
   integration: integrationSuite,
   corpus: corpusSuite,
+  verilog: verilogSuite,
   load: loadSuite,
   security: securitySuite,
 };
-const ORDER = ["unit", "integration", "corpus", "security", "load"];
+const ORDER = ["unit", "integration", "corpus", "verilog", "security", "load"];
 
 function help() {
   const lines = [
