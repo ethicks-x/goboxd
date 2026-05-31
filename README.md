@@ -41,7 +41,8 @@ No Go toolchain or system dependencies are required on the host. Everything runs
 ### Installation
 
 ```sh
-git clone https://github.com/thesouldev/goboxd.git
+git clone https://github.com/ethicks-x/goboxd.git
+git checkout team/spaced
 cd goboxd
 make build
 ```
