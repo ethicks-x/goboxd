@@ -3,8 +3,7 @@
 Concurrency is judged on evidence, not vibes. This document describes how the
 numbers are produced and records the results. **The results table must be filled
 from a clean Docker run**, not from a debugger or a `go run` on the host — see
-[How to reproduce](#how-to-reproduce). Numbers left as `—` have not yet been
-captured on the measurement box.
+[How to reproduce](#how-to-reproduce).
 
 ## What is measured
 
@@ -53,18 +52,22 @@ Copy those numbers into the table below, and note the box you measured on.
 
 ## Results
 
-Measurement box: **(fill in: CPU, cores, RAM, OS, Docker version)**
-goboxd `max_concurrent`: **(fill in — default is `runtime.NumCPU()`)**
-Date: **(fill in)**
+Measurement box:
+- CPU: AMD Ryzen 5 5500H, 8 cores
+- Memory: 16 GB RAM
+- OS: Arch Linux 7.0.10-arch1-1
+- Docker: 29.5.1
+- goboxd `max_concurrent`: **default is `runtime.NumCPU()`**
+- Date: **31-05-2026**
 
 ### py3 "Hello World"
 
 | Clients | Requests/sec | p50 (ms) | p95 (ms) | p99 (ms) | 5xx |
 | ------- | ------------ | -------- | -------- | -------- | --- |
-| 1       | —            | —        | —        | —        | 0   |
-| 10      | —            | —        | —        | —        | 0   |
-| 50      | —            | —        | —        | —        | 0   |
-| 100     | —            | —        | —        | —        | 0   |
+| 1       | 47.1         | 21       | 28       | 29       | 0   |
+| 10      | 206.0        | 46       | 72       | 83       | 0   |
+| 50      | 212.4        | 233      | 262      | 272      | 0   |
+| 100     | 209.0        | 465      | 581      | 675      | 0   |
 
 The `5xx` column must read `0` at every level for the run to pass.
 

@@ -81,6 +81,33 @@ function printScenario(r: ScenarioResult) {
   );
 }
 
+function printTable(scenarios: ScenarioResult[]) {
+  const headers = ["Clients", "Requests/sec", "p50 (ms)", "p95 (ms)", "p99 (ms)", "5xx"];
+  const rows = scenarios.map((r) => {
+    const s = [...r.durationsMs].sort((a, b) => a - b);
+    return [
+      String(r.label.replace(/^c=/, "")),
+      (r.total / (r.wallMs / 1000)).toFixed(1),
+      quantile(s, 0.5).toFixed(0),
+      quantile(s, 0.95).toFixed(0),
+      quantile(s, 0.99).toFixed(0),
+      String(r.http5xx),
+    ];
+  });
+
+  const widths = headers.map((h, i) =>
+    Math.max(h.length, ...rows.map((row) => row[i].length)),
+  );
+  const pad = (cells: string[]) =>
+    "| " + cells.map((c, i) => c.padEnd(widths[i])).join(" | ") + " |";
+  const sep = "| " + widths.map((w) => "-".repeat(w)).join(" | ") + " |";
+
+  console.log();
+  console.log(pad(headers));
+  console.log(sep);
+  for (const row of rows) console.log(pad(row));
+}
+
 const pyHello = () => ({
   language: "py3",
   source: "import sys;sys.stdout.write('hi')",
@@ -121,10 +148,12 @@ export const loadSuite: Suite = {
     const perClient = Math.max(1, Math.floor((ctx.duration > 0 ? ctx.duration * 4 : 20) / 1));
 
     const out: Result[] = [];
+    const helloScenarios: ScenarioResult[] = [];
     console.log(`${C.bold}load · py3 hello world${C.reset}`);
     for (const c of concurrencies) {
       const total = c * perClient;
       const s = await runScenario(ctx.base, `c=${c}`, c, total, pyHello);
+      helloScenarios.push(s);
       printScenario(s);
       const noFiveXX = s.http5xx === 0;
       const allAccepted = s.topAccepted === s.total;
@@ -197,6 +226,8 @@ export const loadSuite: Suite = {
       `\n${C.bold}load${C.reset}: ${C.green}${pass} passed${C.reset}, ` +
         `${fail ? C.red : C.dim}${fail} failed${C.reset}`,
     );
+
+    printTable(helloScenarios);
     return out;
   },
 };
