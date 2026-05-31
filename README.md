@@ -19,12 +19,16 @@ goboxd is an HTTP service written in Go that compiles and runs untrusted code in
 
 ## Features
 
-- Plug and play language registry driven by YAML
-- Process isolation using Linux namespaces and cgroups
-- Bounded concurrency with request queuing
-- Fully containerised for local development and deployment
-- Per request resource limits for time, memory, and processes
-- Liveness and readiness probes for orchestration
+- Plug and play language registry driven by YAML, with no Go code change to add a language
+- Process isolation using nsjail over Linux namespaces and cgroups
+- Bounded concurrency: requests queue on a semaphore rather than failing under load
+- Per request resource limits for wall time, memory, and processes
+- Per test results with a structured status vocabulary; user code outcomes are `200`, not `5xx`
+- Liveness, readiness, and build-info endpoints for orchestration
+- Fully containerised; the host needs neither Go nor nsjail
+
+Nine languages are registered out of the box: C, C++, Python 3, Bash, Java,
+JavaScript, Go, Rust, and Verilog.
 
 ## Getting started
 
@@ -45,10 +49,24 @@ make build
 ### Usage
 
 ```sh
+make build        # build the service and nsjail images
 make run          # start the service on :8080
-make test         # run unit tests
+make dev          # start the service with live reload for development
+make test         # run all tests
+make unit         # run unit tests
 make integration  # run end to end tests
+make corpus       # run the corpus suite for a language
+make load         # drive the concurrency load suite
+make security     # run the security test suite
 make lint         # run static analysis
+```
+
+Send a request:
+
+```sh
+curl -sS -X POST http://localhost:8080/run \
+  -H 'Content-Type: application/json' \
+  --data-binary @docs/examples/run_py3.json | jq
 ```
 
 ## Project structure
@@ -57,9 +75,18 @@ make lint         # run static analysis
 .
 ├── cmd/goboxd/   binary entry point
 ├── internal/     private application packages
+├── configs/      language registry and service config (YAML)
 ├── docs/         api, languages, security, benchmarks, architecture
-└── tests/        integration tests
+└── tests/        integration and load suites
 ```
+
+## Documentation
+
+- [API](docs/api.md) — endpoints, request and response contract, status vocabulary
+- [Languages](docs/languages.md) — the registry, per-language defaults, adding a language
+- [Security](docs/security.md) — the seven closed holes and defence in depth
+- [Architecture](docs/architecture.md) — request flow, packages, concurrency model
+- [Benchmarks](docs/benchmarks.md) — how concurrency is measured and the results
 
 ## Contributing
 
