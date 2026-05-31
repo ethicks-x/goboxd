@@ -1,4 +1,4 @@
-.PHONY: build run dev test unit integration corpus load security
+.PHONY: build run dev test unit integration corpus load security lint
 
 COMPOSE ?= docker compose
 TOOLS   := $(COMPOSE) --profile tools run --rm tools
@@ -30,3 +30,6 @@ load:
 
 security:
 	$(TEST) security
+
+lint:
+	$(TOOLS) golangci-lint run ./...
