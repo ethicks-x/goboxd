@@ -44,6 +44,7 @@ internal/
   runner/           pipeline orchestration, concurrency, workdir, probes
   stats/            atomic counters + disk-free for /info
   handlers/         HTTP handlers: run, healthz, readyz, info
+  playground/       embedded web UI served at /playground
   server/           small net/http framework: router, middleware, JSON
 ```
 
@@ -111,6 +112,16 @@ The orchestration core.
 - `probe.go` — `Prober` runs the nsjail check and each language's `smoke_cmd`,
   caches the result for the configured TTL, and serves both `/readyz` and the
   version strings in `/info`.
+
+### `internal/playground`
+
+A single self-contained web UI for driving the API from a browser, served at
+`GET /playground`. The page (HTML with inline CSS/JS, CodeMirror from a CDN) and
+its bundled demo programs are `//go:embed`-ed into the binary, so there are no
+runtime asset files to ship. Two handlers serve them: `Handler` returns the
+page, `ExamplesHandler` serves `examples.js` at `/playground/examples.js`. The
+package has no dependency on the runner or sandbox — it is a client of the same
+public `/run`, `/info`, and `/readyz` endpoints. See [playground.md](playground.md).
 
 ### `internal/server`
 

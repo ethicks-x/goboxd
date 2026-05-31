@@ -25,6 +25,7 @@ goboxd is an HTTP service written in Go that compiles and runs untrusted code in
 - Per request resource limits for wall time, memory, and processes
 - Per test results with a structured status vocabulary; user code outcomes are `200`, not `5xx`
 - Liveness, readiness, and build-info endpoints for orchestration
+- A built-in web playground for editing code, attaching tests, and running them from the browser
 - Fully containerised; the host needs neither Go nor nsjail
 
 Nine languages are registered out of the box: C, C++, Python 3, Bash, Java,
@@ -70,6 +71,17 @@ curl -sS -X POST http://localhost:8080/run \
   --data-binary @docs/examples/run_py3.json | jq
 ```
 
+### Playground
+
+With the service running, open <http://localhost:8080/playground> in a browser.
+It is a single self-contained page that drives the same `POST /run` API: pick a
+language, edit the source in the editor, load one of the bundled example
+programs, attach test cases (stdin and expected stdout), and run. Results come
+back per test with the build output and timing. A status panel reads `/info` and
+`/readyz` so you can see the registered languages and readiness at a glance, and
+snippets can be saved to the browser for later. See [Playground](docs/playground.md)
+for the full walkthrough.
+
 ## Project structure
 
 ```
@@ -77,13 +89,14 @@ curl -sS -X POST http://localhost:8080/run \
 ├── cmd/goboxd/   binary entry point
 ├── internal/     private application packages
 ├── configs/      language registry and service config (YAML)
-├── docs/         api, languages, security, benchmarks, architecture
+├── docs/         api, playground, languages, security, benchmarks, architecture
 └── tests/        integration and load suites
 ```
 
 ## Documentation
 
 - [API](docs/api.md) — endpoints, request and response contract, status vocabulary
+- [Playground](docs/playground.md) — the built-in web UI for running code from a browser
 - [Languages](docs/languages.md) — the registry, per-language defaults, adding a language
 - [Security](docs/security.md) — the seven closed holes and defence in depth
 - [Architecture](docs/architecture.md) — request flow, packages, concurrency model

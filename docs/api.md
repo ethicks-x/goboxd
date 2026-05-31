@@ -1,14 +1,17 @@
 # API
 
 goboxd speaks plain JSON over HTTP. There is no authentication, no rate
-limiting, and no persistence. Four endpoints are exposed.
+limiting, and no persistence. The JSON API exposes four endpoints, plus a web
+playground served from the same process.
 
-| Method | Path       | Purpose                                  |
-| ------ | ---------- | ---------------------------------------- |
-| POST   | `/run`     | Build and run a snippet against tests.   |
-| GET    | `/healthz` | Liveness. Always cheap.                  |
-| GET    | `/readyz`  | Readiness. nsjail + per-language probes. |
-| GET    | `/info`    | Build info, languages, limits, stats.    |
+| Method | Path                      | Purpose                                  |
+| ------ | ------------------------- | ---------------------------------------- |
+| POST   | `/run`                    | Build and run a snippet against tests.   |
+| GET    | `/healthz`                | Liveness. Always cheap.                  |
+| GET    | `/readyz`                 | Readiness. nsjail + per-language probes. |
+| GET    | `/info`                   | Build info, languages, limits, stats.    |
+| GET    | `/playground`             | The web UI. See [playground.md](playground.md). |
+| GET    | `/playground/examples.js` | Bundled demo programs the UI loads.      |
 
 `GET /` returns a plain-text banner and any unrouted path returns `404`.
 
