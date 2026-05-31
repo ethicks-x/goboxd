@@ -80,11 +80,12 @@ func probeNsjail(ctx context.Context, bin string) ProbeStatus {
 	}
 	cctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-	out, err := exec.CommandContext(cctx, bin, "--version").CombinedOutput()
-	if err != nil {
+	// nsjail has no --version flag (it exits 255 on unknown options); --help
+	// exits 0 and confirms the binary is present and runnable.
+	if err := exec.CommandContext(cctx, bin, "--help").Run(); err != nil {
 		return ProbeStatus{OK: false, Error: err.Error()}
 	}
-	return ProbeStatus{OK: true, Version: firstLine(string(out))}
+	return ProbeStatus{OK: true}
 }
 
 func probeLanguage(ctx context.Context, lang registry.Language) ProbeStatus {
