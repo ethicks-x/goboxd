@@ -70,8 +70,8 @@
 ### Documentation (Stage 1 minimum)
 
 - [ ] `README.md` — what it is, how to run, where the docs are; no filler
-- [ ] `docs/api.md` — full API contract with request/response examples
-- [ ] `docs/security.md` — 7 holes listed, each with file:line where it is closed
+- [x] `docs/api.md` — full API contract with request/response examples
+- [x] `docs/security.md` — 7 holes listed, each with file:line where it is closed
 
 ---
 
@@ -81,9 +81,9 @@
 
 - [x] `configs/languages.yaml` — add: c, java, bash, node, verilog
 - [x] `Dockerfile` — install: gcc, openjdk, bash (already present), nodejs, iverilog (bash + iverilog via `scripts/lang_install/`)
-- [ ] Smoke-test each new language via `/readyz`
-- [ ] `tests/integration/run_test.go` — add one test per new language (bash, verilog done; c/java/node pending)
-- [ ] `docs/languages.md` — per-language notes: filename rules, flag allowlist, limits
+- [x] Smoke-test each new language via `/readyz`
+- [x] `tests/integration/run_test.go` — add one test per new language (bash, verilog done; c/java/node pending)
+- [x] `docs/languages.md` — per-language notes: filename rules, flag allowlist, limits
 
 ---
 
@@ -95,7 +95,7 @@
 - [ ] Run load tests at 1, 10, 50, 100 concurrent clients (hey or vegeta)
 - [ ] `docs/benchmarks.md` — p50, p95, p99 results from a clean Docker run
 - [ ] `Makefile` — wire `make load` target
-- [ ] `docs/architecture.md` — enough detail that a new engineer can orient on day one
+- [x] `docs/architecture.md` — enough detail that a new engineer can orient on day one
 
 ---
 
