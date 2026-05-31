@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ethicks-x/goboxd/internal/registry"
@@ -64,7 +66,7 @@ func (s *NsjailSandbox) Build(ctx context.Context, job sandbox.BuildJob) sandbox
 	}
 
 	args := s.buildArgv(job.WorkDir, job.Language, job.Limits, job.Flags, job.Filename, job.Artifact)
-	stdout, stderr, dur, err := s.runCmd(ctx, args, "", job.WorkDir)
+	stdout, stderr, _, dur, err := s.runCmd(ctx, args, "", job.WorkDir)
 	if err != nil {
 		if isInfraErr(err) {
 			return sandbox.BuildResult{Stdout: stdout, Stderr: stderr, Duration: dur, InternalErr: err}
@@ -76,9 +78,9 @@ func (s *NsjailSandbox) Build(ctx context.Context, job sandbox.BuildJob) sandbox
 
 func (s *NsjailSandbox) Run(ctx context.Context, job sandbox.RunJob) sandbox.TestResult {
 	args := s.runArgv(job.WorkDir, job.Language, job.Limits, job.Flags, job.Artifact)
-	stdout, stderr, dur, err := s.runCmd(ctx, args, job.Stdin, job.WorkDir)
+	stdout, stderr, nsjailLog, dur, err := s.runCmd(ctx, args, job.Stdin, job.WorkDir)
 	if err != nil {
-		st := exitStatus(err, stdout, stderr)
+		st := exitStatus(err, nsjailLog)
 		return sandbox.TestResult{Status: st, Stdout: stdout, Stderr: stderr, Duration: dur}
 	}
 	return sandbox.TestResult{Status: "accepted", Stdout: stdout, Stderr: stderr, Duration: dur}
@@ -197,6 +199,10 @@ func (s *NsjailSandbox) baseJailArgs(workDir string, limits registry.Limits, ext
 		// cgroup_mem_max caps actual RSS; rlimit_as would cap virtual address
 		// space, which V8/JVM reserve in multi-GB chunks at startup.
 		args = append(args, "--cgroup_mem_max", strconv.FormatInt(int64(limits.MemoryKB)*1024, 10))
+		// Without also capping swap, hitting memory.max just pages anonymous
+		// memory out to the host's swap instead of OOM-killing, so an over-cap
+		// allocation silently succeeds. swap.max=0 forces a kill at the cap.
+		args = append(args, "--cgroup_mem_swap_max", "0")
 	}
 	if limits.MaxProcesses > 0 {
 		args = append(args, "--max_cpus", "1")
@@ -205,7 +211,7 @@ func (s *NsjailSandbox) baseJailArgs(workDir string, limits registry.Limits, ext
 	return args
 }
 
-func (s *NsjailSandbox) runCmd(ctx context.Context, argv []string, stdin, workDir string) (stdout, stderr string, dur time.Duration, err error) {
+func (s *NsjailSandbox) runCmd(ctx context.Context, argv []string, stdin, workDir string) (stdout, stderr, nsjailLog string, dur time.Duration, err error) {
 	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	cmd.Dir = workDir
 
@@ -213,12 +219,26 @@ func (s *NsjailSandbox) runCmd(ctx context.Context, argv []string, stdin, workDi
 		cmd.Stdin = strings.NewReader(stdin)
 	}
 
-	// Discard nsjail's own log (fd 3) by opening /dev/null — nsjail writes to
-	// the fd we named in --log_fd; if it can't open it the run still works.
-	devNull, _ := os.Open(os.DevNull)
-	if devNull != nil {
-		defer devNull.Close()
-		cmd.ExtraFiles = []*os.File{devNull} // becomes fd 3
+	// Capture nsjail's own log (fd 3, named in --log_fd) so exitStatus can tell
+	// a time-limit kill from an OOM kill: both surface as nsjail exit 137, but
+	// only the time-limit path logs "run time >= time limit". A pipe failure is
+	// non-fatal — we fall back to /dev/null and the run still works.
+	var logBuf bytes.Buffer
+	logR, logW, pipeErr := os.Pipe()
+	var logWG sync.WaitGroup
+	if pipeErr == nil {
+		cmd.ExtraFiles = []*os.File{logW} // becomes fd 3
+		logWG.Add(1)
+		go func() {
+			defer logWG.Done()
+			_, _ = io.Copy(&logBuf, logR)
+		}()
+	} else {
+		devNull, _ := os.Open(os.DevNull)
+		if devNull != nil {
+			defer devNull.Close()
+			cmd.ExtraFiles = []*os.File{devNull} // becomes fd 3
+		}
 	}
 
 	var outBuf, errBuf bytes.Buffer
@@ -231,6 +251,15 @@ func (s *NsjailSandbox) runCmd(ctx context.Context, argv []string, stdin, workDi
 	err = cmd.Run()
 	dur = time.Since(start)
 
+	if pipeErr == nil {
+		// Close the parent's write end so the reader sees EOF (the child, now
+		// exited, held the only other copy), then collect the drained log.
+		_ = logW.Close()
+		logWG.Wait()
+		_ = logR.Close()
+		nsjailLog = logBuf.String()
+	}
+
 	if outLim.truncated {
 		outBuf.WriteString(truncatedMarker)
 	}
@@ -238,7 +267,7 @@ func (s *NsjailSandbox) runCmd(ctx context.Context, argv []string, stdin, workDi
 		errBuf.WriteString(truncatedMarker)
 	}
 
-	return outBuf.String(), errBuf.String(), dur, err
+	return outBuf.String(), errBuf.String(), nsjailLog, dur, err
 }
 
 // limitedWriter caps output at n bytes and marks when truncated.
@@ -263,11 +292,6 @@ func (w *limitedWriter) Write(p []byte) (int, error) {
 	w.remaining -= n
 	return n, err
 }
-
-// devNullWriter discards everything (used as a no-op placeholder).
-type devNullWriter struct{}
-
-func (devNullWriter) Write(p []byte) (int, error) { return len(p), nil }
 
 // sortedKeys returns the keys of m in lexical order, so env flags land in a
 // deterministic order in the argv.
@@ -318,7 +342,7 @@ func isExitError(err error, target **exec.ExitError) bool {
 	return true
 }
 
-func exitStatus(err error, stdout, stderr string) string {
+func exitStatus(err error, nsjailLog string) string {
 	if err == nil {
 		return "accepted"
 	}
@@ -328,10 +352,14 @@ func exitStatus(err error, stdout, stderr string) string {
 	}
 	code := exitErr.ExitCode()
 	switch {
-	case code == 137: // SIGKILL — nsjail uses this for time/memory exceeded
-		// Distinguish time vs memory: nsjail prints "time limit exceeded" in its log.
-		// Without parsing nsjail's log we default to time_exceeded as the common case.
-		return "time_exceeded"
+	case code == 137: // SIGKILL — nsjail exits 137 for both time and memory kills.
+		// Only the time-limit path logs "run time >= time limit"; an OOM kill
+		// (memory.max hit with swap.max=0) is a bare SIGKILL, so anything else
+		// at 137 is treated as the memory cap being exceeded.
+		if strings.Contains(nsjailLog, "run time >= time limit") {
+			return "time_exceeded"
+		}
+		return "memory_exceeded"
 	case code > 0:
 		return "runtime_error"
 	default:
