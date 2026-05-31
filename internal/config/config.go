@@ -11,18 +11,18 @@ import (
 
 // Limits holds resource constraints that can appear at the language or request level.
 type Limits struct {
-	WallTimeS   int `yaml:"wall_time_s"`
-	MemoryKB    int `yaml:"memory_kb"`
+	WallTimeS    int `yaml:"wall_time_s"`
+	MemoryKB     int `yaml:"memory_kb"`
 	MaxProcesses int `yaml:"max_processes"`
 }
 
 // Config is the top-level server configuration.
 type Config struct {
-	Port          int    `yaml:"port"`
-	NsjailBin     string `yaml:"nsjail_bin"`
-	JailDir       string `yaml:"jail_dir"`
-	LanguagesFile string `yaml:"languages_file"`
-	MaxConcurrent int    `yaml:"max_concurrent"`
+	Port           int    `yaml:"port"`
+	NsjailBin      string `yaml:"nsjail_bin"`
+	JailDir        string `yaml:"jail_dir"`
+	LanguagesFile  string `yaml:"languages_file"`
+	MaxConcurrent  int    `yaml:"max_concurrent"`
 	SandboxBackend string `yaml:"sandbox_backend"`
 
 	// Global output cap applied to every sandbox run (build + test).
@@ -35,8 +35,8 @@ type Config struct {
 	MaxTests int `yaml:"max_tests"`
 
 	// Readyz smoke-probe cache TTL.
-	ReadyzCacheTTL time.Duration `yaml:"-"`
-	ReadyzCacheTTLS int `yaml:"readyz_cache_ttl_s"`
+	ReadyzCacheTTL  time.Duration `yaml:"-"`
+	ReadyzCacheTTLS int           `yaml:"readyz_cache_ttl_s"`
 }
 
 func defaults() Config {

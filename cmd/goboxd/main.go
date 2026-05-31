@@ -34,9 +34,9 @@ func main() {
 	var sbox sandbox.Sandbox
 	switch cfg.SandboxBackend {
 	case "mock":
-		sbox = mock.New()
+		sbox = mock.New(cfg.MaxOutputBytes)
 	default:
-		sbox = nsjail.New(cfg.NsjailBin, cfg.JailDir)
+		sbox = nsjail.New(cfg.NsjailBin, cfg.JailDir, cfg.MaxOutputBytes)
 	}
 
 	for _, err := range runner.StartupSweep(cfg.JailDir, 10*time.Minute) {

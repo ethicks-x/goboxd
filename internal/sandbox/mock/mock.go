@@ -16,13 +16,22 @@ import (
 	"github.com/ethicks-x/goboxd/internal/sandbox"
 )
 
-const maxOutputBytes = 1 << 20 // 1 MiB
+const defaultMaxOutputBytes = 1 << 20 // 1 MiB, used when unconfigured
 
 // MockSandbox runs commands on the host, no isolation.
-type MockSandbox struct{}
+type MockSandbox struct {
+	maxOutputBytes int
+}
 
-// New returns a MockSandbox.
-func New() *MockSandbox { return &MockSandbox{} }
+// New returns a MockSandbox. maxOutputBytes caps each captured stream per run;
+// a value <= 0 falls back to defaultMaxOutputBytes.
+func New(maxOutputBytes int64) *MockSandbox {
+	cap := int(maxOutputBytes)
+	if cap <= 0 {
+		cap = defaultMaxOutputBytes
+	}
+	return &MockSandbox{maxOutputBytes: cap}
+}
 
 func (m *MockSandbox) Build(ctx context.Context, job sandbox.BuildJob) sandbox.BuildResult {
 	if job.Language.Build == nil {
@@ -30,7 +39,7 @@ func (m *MockSandbox) Build(ctx context.Context, job sandbox.BuildJob) sandbox.B
 	}
 	spec := job.Language.Build
 	argv := expandArgs(spec.Cmd, spec.Args, job.WorkDir, job.Flags, "")
-	stdout, stderr, dur, err := runHost(ctx, argv, "", job.WorkDir)
+	stdout, stderr, dur, err := runHost(ctx, argv, "", job.WorkDir, m.maxOutputBytes)
 	if err != nil {
 		return sandbox.BuildResult{OK: false, Stdout: stdout, Stderr: stderr, Duration: dur}
 	}
@@ -40,7 +49,7 @@ func (m *MockSandbox) Build(ctx context.Context, job sandbox.BuildJob) sandbox.B
 func (m *MockSandbox) Run(ctx context.Context, job sandbox.RunJob) sandbox.TestResult {
 	spec := job.Language.Run
 	argv := expandArgs(spec.Cmd, spec.Args, job.WorkDir, job.Flags, job.Artifact)
-	stdout, stderr, dur, err := runHost(ctx, argv, job.Stdin, job.WorkDir)
+	stdout, stderr, dur, err := runHost(ctx, argv, job.Stdin, job.WorkDir, m.maxOutputBytes)
 	if err != nil {
 		return sandbox.TestResult{Status: "runtime_error", Stdout: stdout, Stderr: stderr, Duration: dur}
 	}
@@ -71,7 +80,7 @@ func expandOne(arg, workDir, artifact string) string {
 	return arg
 }
 
-func runHost(ctx context.Context, argv []string, stdin, workDir string) (stdout, stderr string, dur time.Duration, err error) {
+func runHost(ctx context.Context, argv []string, stdin, workDir string, maxOutputBytes int) (stdout, stderr string, dur time.Duration, err error) {
 	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	cmd.Dir = workDir
 	if stdin != "" {

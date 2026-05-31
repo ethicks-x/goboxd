@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	maxOutputBytes  = 1 << 20 // 1 MiB per stream
-	truncatedMarker = "\n[truncated]"
+	defaultMaxOutputBytes = 1 << 20 // 1 MiB per stream, used when unconfigured
+	truncatedMarker       = "\n[truncated]"
 
 	// nsjail's default RLIMIT_NOFILE (32) and RLIMIT_FSIZE (1 MiB) are far too
 	// small for real toolchains: the Go compiler exhausts 32 descriptors and
@@ -43,13 +43,19 @@ var deviceMounts = []struct {
 
 // NsjailSandbox runs jobs inside nsjail.
 type NsjailSandbox struct {
-	nsjailBin string
-	jailDir   string
+	nsjailBin      string
+	jailDir        string
+	maxOutputBytes int
 }
 
-// New returns an NsjailSandbox.
-func New(nsjailBin, jailDir string) *NsjailSandbox {
-	return &NsjailSandbox{nsjailBin: nsjailBin, jailDir: jailDir}
+// New returns an NsjailSandbox. maxOutputBytes caps each captured stream
+// (stdout/stderr) per run; a value <= 0 falls back to defaultMaxOutputBytes.
+func New(nsjailBin, jailDir string, maxOutputBytes int64) *NsjailSandbox {
+	cap := int(maxOutputBytes)
+	if cap <= 0 {
+		cap = defaultMaxOutputBytes
+	}
+	return &NsjailSandbox{nsjailBin: nsjailBin, jailDir: jailDir, maxOutputBytes: cap}
 }
 
 func (s *NsjailSandbox) Build(ctx context.Context, job sandbox.BuildJob) sandbox.BuildResult {
@@ -216,8 +222,8 @@ func (s *NsjailSandbox) runCmd(ctx context.Context, argv []string, stdin, workDi
 	}
 
 	var outBuf, errBuf bytes.Buffer
-	outLim := &limitedWriter{buf: &outBuf, remaining: maxOutputBytes}
-	errLim := &limitedWriter{buf: &errBuf, remaining: maxOutputBytes}
+	outLim := &limitedWriter{buf: &outBuf, remaining: s.maxOutputBytes}
+	errLim := &limitedWriter{buf: &errBuf, remaining: s.maxOutputBytes}
 	cmd.Stdout = outLim
 	cmd.Stderr = errLim
 
