@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>goboxd playground</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+
+<style>
+  :root {
+    /* GitHub dark */
+    --bg: #0d1117;
+    --panel: #0d1117;
+    --panel-2: #161b22;
+    --panel-3: #21262d;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #2f81f7;
+    --accent-hover: #1f6feb;
+    --ok: #3fb950;
+    --warn: #d29922;
+    --err: #f85149;
+    --shadow: 0 8px 24px rgba(1,4,9,.5);
+    --radius: 10px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    --cm-theme: github-dark;
+  }
+  [data-theme="light"] {
+    /* GitHub light */
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --panel-2: #f6f8fa;
+    --panel-3: #eaeef2;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --muted: #656d76;
+    --accent: #0969da;
+    --accent-hover: #0860ca;
+    --ok: #1a7f37;
+    --warn: #9a6700;
+    --err: #cf222e;
+    --shadow: 0 8px 24px rgba(140,149,159,.2);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    background: color-mix(in srgb, var(--panel-2) 80%, transparent);
+    backdrop-filter: saturate(160%) blur(8px);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 14px; }
+  .brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+  .brand small { color: var(--muted); font-weight: 400; }
+  header .spacer { flex: 1; }
+  .nav-sep { width: 1px; align-self: stretch; background: var(--border); margin: 2px 4px; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    font-size: 12px; color: var(--muted); cursor: default;
+  }
+  .pill .led { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .pill .led.ok { background: var(--ok); }
+  .pill .led.bad { background: var(--err); }
+  .pill.click { cursor: pointer; }
+  .pill.click:hover { border-color: var(--accent); }
+
+  button {
+    font-family: var(--sans); font-size: 12.5px;
+    background: var(--panel-3); color: var(--text);
+    border: 1px solid var(--border); border-radius: 7px;
+    padding: 5px 10px; cursor: pointer;
+    transition: background .12s, border-color .12s, box-shadow .12s, transform .05s;
+  }
+  button:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); }
+  button:active { transform: translateY(1px); }
+  button.primary { background: var(--accent); border-color: color-mix(in srgb, #000 12%, var(--accent)); color: #fff; font-weight: 600; box-shadow: 0 1px 0 rgba(27,31,36,.1); }
+  button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  button.ghost { background: transparent; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.icon { padding: 7px 9px; line-height: 1; }
+
+  select, input[type=text] {
+    font-family: var(--sans); font-size: 13px;
+    background: var(--panel-3); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px;
+  }
+  select:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); }
+
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  .panel {
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .panel + .panel { border-left: 1px solid var(--border); }
+  .panel > .head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; border-bottom: 1px solid var(--border);
+    background: var(--panel-2); flex-wrap: wrap; flex: 0 0 auto;
+  }
+  .panel > .head h2 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .02em; }
+  .panel > .head .spacer { flex: 1; }
+  .panel > .body { padding: 10px; flex: 1; min-height: 0; overflow: auto; }
+  .panel > .body > .subbody { padding: 10px; display: flex; flex-direction: column; }
+
+  /* left editor pane fills its panel; run row pinned below */
+  .editor-body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0 !important;
+  }
+  .editor-wrap { flex: 1; min-height: 0; position: relative; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  .CodeMirror {
+    height: 100%;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.55;
+    cursor: text;
+  }
+  .editor-wrap .CodeMirror {
+    position: absolute; inset: 0; height: 100%; min-height: 0;
+  }
+  .CodeMirror-gutters { border-radius: var(--radius) 0 0 var(--radius); }
+
+  /* ---- GitHub theme (dark) ---- */
+  .cm-s-github-dark.CodeMirror { background: #0d1117; color: #e6edf3; }
+  .cm-s-github-dark .CodeMirror-gutters { background: #0d1117; border-right: 1px solid #21262d; }
+  .cm-s-github-dark .CodeMirror-linenumber { color: #6e7681; }
+  .cm-s-github-dark .CodeMirror-cursor { border-left: 1px solid #e6edf3; }
+  .cm-s-github-dark .CodeMirror-selected { background: rgba(56,139,253,.25); }
+  .cm-s-github-dark.CodeMirror-focused .CodeMirror-selected { background: rgba(56,139,253,.35); }
+  .cm-s-github-dark .CodeMirror-activeline-background { background: rgba(177,186,196,.07); }
+  .cm-s-github-dark .cm-comment { color: #8b949e; font-style: italic; }
+  .cm-s-github-dark .cm-keyword, .cm-s-github-dark .cm-operator { color: #ff7b72; }
+  .cm-s-github-dark .cm-atom, .cm-s-github-dark .cm-number, .cm-s-github-dark .cm-builtin, .cm-s-github-dark .cm-attribute { color: #79c0ff; }
+  .cm-s-github-dark .cm-string, .cm-s-github-dark .cm-string-2 { color: #a5d6ff; }
+  .cm-s-github-dark .cm-def, .cm-s-github-dark .cm-property { color: #d2a8ff; }
+  .cm-s-github-dark .cm-variable, .cm-s-github-dark .cm-bracket { color: #e6edf3; }
+  .cm-s-github-dark .cm-variable-2 { color: #ffa657; }
+  .cm-s-github-dark .cm-variable-3, .cm-s-github-dark .cm-type { color: #ff7b72; }
+  .cm-s-github-dark .cm-meta { color: #8b949e; }
+  .cm-s-github-dark .cm-tag, .cm-s-github-dark .cm-qualifier { color: #7ee787; }
+  .cm-s-github-dark .cm-error { color: #ffa198; }
+  .cm-s-github-dark .CodeMirror-matchingbracket { color: #3fb950 !important; border-bottom: 1px solid #3fb950; }
+
+  /* ---- GitHub theme (light) ---- */
+  .cm-s-github-light.CodeMirror { background: #ffffff; color: #1f2328; }
+  .cm-s-github-light .CodeMirror-gutters { background: #ffffff; border-right: 1px solid #d8dee4; }
+  .cm-s-github-light .CodeMirror-linenumber { color: #8c959f; }
+  .cm-s-github-light .CodeMirror-cursor { border-left: 1px solid #1f2328; }
+  .cm-s-github-light .CodeMirror-selected { background: rgba(84,174,255,.25); }
+  .cm-s-github-light.CodeMirror-focused .CodeMirror-selected { background: rgba(84,174,255,.35); }
+  .cm-s-github-light .CodeMirror-activeline-background { background: #f6f8fa; }
+  .cm-s-github-light .cm-comment { color: #6e7781; font-style: italic; }
+  .cm-s-github-light .cm-keyword, .cm-s-github-light .cm-operator { color: #cf222e; }
+  .cm-s-github-light .cm-atom, .cm-s-github-light .cm-number, .cm-s-github-light .cm-builtin, .cm-s-github-light .cm-attribute { color: #0550ae; }
+  .cm-s-github-light .cm-string, .cm-s-github-light .cm-string-2 { color: #0a3069; }
+  .cm-s-github-light .cm-def, .cm-s-github-light .cm-property { color: #8250df; }
+  .cm-s-github-light .cm-variable, .cm-s-github-light .cm-bracket { color: #1f2328; }
+  .cm-s-github-light .cm-variable-2 { color: #953800; }
+  .cm-s-github-light .cm-variable-3, .cm-s-github-light .cm-type { color: #cf222e; }
+  .cm-s-github-light .cm-meta { color: #6e7781; }
+  .cm-s-github-light .cm-tag, .cm-s-github-light .cm-qualifier { color: #116329; }
+  .cm-s-github-light .cm-error { color: #cf222e; }
+  .cm-s-github-light .CodeMirror-matchingbracket { color: #1a7f37 !important; border-bottom: 1px solid #1a7f37; }
+
+  @media (max-width: 920px) {
+    body { height: auto; min-height: 100vh; overflow: auto; }
+    main { grid-template-columns: 1fr; align-items: start; }
+    .panel + .panel { border-left: none; border-top: 1px solid var(--border); }
+    .editor-body { overflow: visible; }
+    .editor-wrap { min-height: 420px; }
+    .editor-wrap .CodeMirror { position: relative; }
+  }
+
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+
+  /* test cases — tab view */
+  .tc-tabs {
+    display: flex; gap: 2px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border); margin-bottom: 10px;
+    background-color: var(--panel-2); padding: 3px 10px 0 10px;
+  }
+  .tc-tab {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px; font-size: 12px; cursor: pointer; color: var(--muted);
+    background: transparent; border: 1px solid transparent; border-bottom: none;
+    border-radius: 7px 7px 0 0; margin-bottom: -1px;
+  }
+  .tc-tab:hover { color: var(--text); }
+  .tc-tab.active { color: var(--text); background: var(--panel); border-color: var(--border); }
+  .tc-tab .x { font-size: 11px; opacity: .55; line-height: 1; }
+  .tc-tab .x:hover { opacity: 1; color: var(--err); }
+
+  .tc-cells { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 560px) { .tc-cells { grid-template-columns: 1fr; } }
+  .tc-cell { display: flex; flex-direction: column; gap: 4px; }
+  .tc-cell > label {
+    font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .tc-cell .CodeMirror {
+    height: 150px; border: 1px solid var(--border); border-radius: 8px;
+    font-family: var(--mono); font-size: 12px;
+  }
+
+  /* result badges */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    border: 1px solid transparent;
+  }
+  .badge.ok  { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+  .badge.bad { background: color-mix(in srgb, var(--err) 16%, transparent); color: var(--err); border-color: color-mix(in srgb, var(--err) 40%, transparent); }
+  .badge.warn{ background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+  .badge.neutral { background: var(--panel-2); color: var(--muted); border-color: var(--border); }
+
+  .result {
+    border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden;
+  }
+  .result > .r-head {
+    display: flex; align-items: center; gap: 10px; padding: 8px 11px;
+    background: var(--panel-2); cursor: pointer; flex-wrap: wrap;
+  }
+  .result > .r-head .meta { color: var(--muted); font-size: 12px; }
+  .result > .r-body { padding: 0; display: none; }
+  .result.open > .r-body { display: block; }
+  .io-block { border-top: 1px solid var(--border); }
+  .io-block .io-label { font-size: 11px; color: var(--muted); padding: 6px 10px 2px; text-transform: uppercase; letter-spacing: .04em; }
+  pre.io {
+    margin: 0; padding: 8px 10px; font-family: var(--mono); font-size: 12px;
+    white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow: auto;
+    background: var(--panel);
+  }
+  pre.io:empty::after { content: "(empty)"; color: var(--muted); font-style: italic; }
+
+  .summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+
+  /* status modal content */
+  #statusDialog { width: min(780px, 94vw); }
+  .d-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
+  .d-grid .d-section { margin-bottom: 0; }
+  .d-grid .d-span { grid-column: 1 / -1; }
+  @media (max-width: 620px) { .d-grid { grid-template-columns: 1fr; } }
+  .d-section { margin-bottom: 16px; }
+  .d-section:last-child { margin-bottom: 0; }
+  .d-section-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); margin-bottom: 8px;
+  }
+  .d-section-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+  .kv {
+    display: grid; grid-template-columns: auto 1fr; font-size: 12px;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden;
+  }
+  .kv dt, .kv dd { padding: 7px 12px; border-top: 1px solid var(--border); }
+  .kv dt:first-of-type, .kv dd:nth-of-type(1) { border-top: none; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; font-family: var(--mono); text-align: right; color: var(--text); }
+
+  .lang-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .lang-chip {
+    display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px;
+    border-radius: 999px; background: var(--panel-2); border: 1px solid var(--border);
+    font-size: 12px; font-family: var(--mono);
+  }
+  .lang-chip .led { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .lang-chip .led.ok { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
+  .lang-chip .led.bad { background: var(--err); box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 22%, transparent); }
+
+  .empty {
+    color: var(--muted); font-style: italic; padding: 16px;
+    text-align: center; border: 1px dashed var(--border); border-radius: 10px;
+  }
+
+  .toast {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 16px; border-radius: 8px; box-shadow: var(--shadow);
+    opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 50; font-size: 13px;
+  }
+  .toast.show { opacity: 1; }
+
+  dialog {
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 0; width: min(460px, 92vw); box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  dialog[open] { animation: dlg-in .18s cubic-bezier(.16,1,.3,1); }
+  @keyframes dlg-in {
+    from { opacity: 0; transform: translateY(8px) scale(.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  dialog::backdrop {
+    background: rgba(1,4,9,.55);
+    backdrop-filter: blur(3px) saturate(120%);
+    animation: bd-in .18s ease;
+  }
+  @keyframes bd-in { from { opacity: 0; } to { opacity: 1; } }
+  dialog .d-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 13px 16px; border-bottom: 1px solid var(--border);
+    font-weight: 600; font-size: 14px;
+    background: color-mix(in srgb, var(--panel-3) 50%, transparent);
+  }
+  dialog .d-head .spacer { flex: 1; }
+  dialog .d-head .x {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; padding: 0; border-radius: 7px; line-height: 1;
+    font-size: 16px; color: var(--muted); background: transparent; border: 1px solid transparent;
+  }
+  dialog .d-head .x:hover { color: var(--text); background: var(--panel-3); border-color: var(--border); }
+  dialog .d-body { padding: 16px; max-height: 50vh; overflow: auto; background: var(--panel); }
+  dialog .d-foot {
+    padding: 12px 16px; border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end; gap: 8px;
+    background: color-mix(in srgb, var(--panel-3) 50%, transparent);
+  }
+  .snip {
+    display: flex; align-items: center; gap: 10px; padding: 9px 11px;
+    border: 1px solid var(--border); border-radius: 9px; margin-bottom: 8px;
+    background: var(--panel-2); transition: border-color .12s, background .12s;
+  }
+  .snip:last-child { margin-bottom: 0; }
+  .snip:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); background: var(--panel-3); }
+  .snip .name { font-weight: 600; }
+  .snip small {
+    color: var(--muted); font-family: var(--mono); font-size: 11px;
+    padding: 2px 7px; border-radius: 999px; background: var(--panel-3); border: 1px solid var(--border);
+  }
+  .snip:hover small { background: var(--panel-2); }
+  .snip .spacer { flex: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="dot"></span> goboxd <small>playground</small>
+  </div>
+  <div class="spacer"></div>
+  <span class="pill" id="runMeta" style="display:none"></span>
+  <button class="primary" id="runBtn">&#9654; Run</button>
+  <button id="saveBtn" title="Save to localStorage">&#128190; Save</button>
+  <button id="loadBtn" title="Open saved snippets">&#128194; Saved</button>
+  <span class="nav-sep"></span>
+  <div class="pill click" id="readyPill" title="GET /readyz">
+    <span class="led" id="readyLed"></span><span id="readyText">readyz…</span>
+  </div>
+  <button class="ghost icon" id="statusBtn" title="Service status">&#9432; status</button>
+  <button class="ghost icon" id="themeBtn" title="Toggle theme">&#9728;</button>
+</header>
+
+<main>
+  <!-- LEFT: editor -->
+  <section class="panel">
+    <div class="head">
+      <h2>Source</h2>
+      <div class="spacer"></div>
+      <div class="toolbar">
+        <label class="field" style="flex-direction:row;align-items:center;gap:6px">
+          <span>Language</span>
+          <select id="langSelect"></select>
+        </label>
+        <select id="exampleSelect" title="Load a demo example"></select>
+      </div>
+    </div>
+    <div class="body editor-body">
+      <div class="editor-wrap"><textarea id="code"></textarea></div>
+    </div>
+  </section>
+
+  <!-- RIGHT: tests + results -->
+  <section class="panel">
+    <div class="head">
+      <h2>Test cases</h2>
+      <div class="spacer"></div>
+      <button id="addTcBtn" style="padding: 7.5px 12px;">+ Add test</button>
+    </div>
+    <div class="body" style="padding:0;overflow:hidden">
+      <div id="tests"></div>
+      <div class="subbody">
+        <div class="head" style="background:transparent;border:none;padding:14px 0 8px">
+          <h2>Results</h2>
+        </div>
+        <div id="results"><div class="empty">Run the code to see per-test results.</div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<!-- status dialog -->
+<dialog id="statusDialog">
+  <div class="d-head">
+    <span>Service status</span>
+    <span class="spacer"></span>
+    <button class="x" id="statusX" title="Close" aria-label="Close">&#10005;</button>
+  </div>
+  <div class="d-body" id="statusBody"><div class="empty">Loading…</div></div>
+  <div class="d-foot">
+    <button id="statusRefresh">Refresh</button>
+    <button class="primary" id="statusClose">Close</button>
+  </div>
+</dialog>
+
+<!-- snippets dialog -->
+<dialog id="snipDialog">
+  <div class="d-head">
+    <span>Saved snippets</span>
+    <span class="spacer"></span>
+    <button class="x" id="snipX" title="Close" aria-label="Close">&#10005;</button>
+  </div>
+  <div class="d-body" id="snipBody"></div>
+  <div class="d-foot">
+    <button class="primary" id="snipClose">Close</button>
+  </div>
+</dialog>
+
+<!-- CodeMirror core + modes -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/go/go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/mode/simple.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/rust/rust.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/verilog/verilog.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+
+<!-- demo programs, served from the same handler family as the page -->
+<script src="http://localhost:8080/playground/examples.js"></script>
+
+<script>
+"use strict";
+
+// ----- language metadata -------------------------------------------------
+// CodeMirror mode per language id (falls back to plain text if absent).
+const CM_MODE = {
+  c: "text/x-csrc", cpp: "text/x-c++src", java: "text/x-java",
+  py3: "python", bash: "shell", js: "javascript",
+  go: "text/x-go", rust: "text/x-rustsrc", verilog: "verilog",
+};
+
+// EXAMPLES (and its SUM_TESTS / GREET_TESTS helpers) is defined in the
+// separate, embedded examples.js loaded just before this script.
+
+// fallback language list if /info is unreachable
+const FALLBACK_LANGS = [
+  { id: "py3", name: "Python 3" }, { id: "c", name: "C" }, { id: "cpp", name: "C++" },
+  { id: "java", name: "Java" }, { id: "js", name: "JavaScript" }, { id: "go", name: "Go" },
+  { id: "rust", name: "Rust" }, { id: "bash", name: "Bash" }, { id: "verilog", name: "Verilog" },
+];
+
+// status label -> badge class
+function badgeClass(status) {
+  if (status === "accepted" || status === "ok") return "ok";
+  if (status === "output_whitespace_mismatch") return "warn";
+  if (status === "not_executed") return "neutral";
+  return "bad";
+}
+
+// ----- DOM helpers -------------------------------------------------------
+const $ = (id) => document.getElementById(id);
+function el(tag, attrs, ...kids) {
+  const n = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    if (k === "class") n.className = attrs[k];
+    else if (k === "text") n.textContent = attrs[k];
+    else n.setAttribute(k, attrs[k]);
+  }
+  for (const c of kids) if (c != null) n.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+  return n;
+}
+let toastTimer;
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+// ----- theme -------------------------------------------------------------
+const THEME_KEY = "goboxd.theme";
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  $("themeBtn").innerHTML = theme === "dark" ? "&#9728;" : "&#9790;";
+  const cmt = theme === "dark" ? "github-dark" : "github-light";
+  if (editor) editor.setOption("theme", cmt);
+  tcEditors.forEach((cm) => cm.setOption("theme", cmt));
+}
+function initTheme() {
+  let t = localStorage.getItem(THEME_KEY);
+  if (!t) t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  applyTheme(t);
+}
+$("themeBtn").addEventListener("click", () => {
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, next); applyTheme(next);
+});
+
+// ----- editor ------------------------------------------------------------
+let editor;
+// id of the example the editor currently holds (a PROGRAMS id), or null once
+// the user edits it. While set, switching language carries the same example;
+// once null, switching language only swaps in boilerplate.
+let currentExampleId = null;
+function initEditor() {
+  editor = CodeMirror.fromTextArea($("code"), {
+    lineNumbers: true,
+    theme: document.documentElement.getAttribute("data-theme") === "dark" ? "github-dark" : "github-light",
+    indentUnit: 4,
+    tabSize: 4,
+    autoCloseBrackets: true,
+    matchBrackets: true,
+    mode: "python",
+  });
+  const autosaveSoon = debounce(autosave, 400);
+  editor.on("change", (cm, change) => {
+    // a user edit (anything but a programmatic setValue) deselects the example
+    if (change.origin !== "setValue") { currentExampleId = null; syncExampleSelect(); }
+    autosaveSoon();
+  });
+  // the editor lives in an absolutely-positioned wrapper; refresh once layout settles
+  requestAnimationFrame(() => editor.refresh());
+  window.addEventListener("resize", debounce(() => editor.refresh(), 150));
+}
+function setMode(langId) {
+  editor.setOption("mode", CM_MODE[langId] || "text/plain");
+}
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+// ----- language select ---------------------------------------------------
+function populateLangs(langs) {
+  const sel = $("langSelect");
+  const current = sel.value;
+  sel.innerHTML = "";
+  for (const l of langs) sel.appendChild(el("option", { value: l.id }, l.name + " (" + l.id + ")"));
+  if (current && langs.some((l) => l.id === current)) sel.value = current;
+}
+function populateExamples(langId) {
+  const sel = $("exampleSelect");
+  sel.innerHTML = "";
+  sel.appendChild(el("option", { value: "" }, "Examples…"));
+  (EXAMPLES[langId] || []).forEach((ex, i) =>
+    sel.appendChild(el("option", { value: String(i) }, ex.label)));
+  syncExampleSelect();
+}
+// reflect the currently-loaded example in the picker (or reset to "Examples…")
+function syncExampleSelect() {
+  const lang = $("langSelect").value;
+  const list = EXAMPLES[lang] || [];
+  const i = currentExampleId == null ? -1 : list.findIndex((e) => e.id === currentExampleId);
+  $("exampleSelect").value = i >= 0 ? String(i) : "";
+}
+
+$("langSelect").addEventListener("change", () => {
+  const lang = $("langSelect").value;
+  setMode(lang);
+  const list = EXAMPLES[lang] || [];
+  if (currentExampleId != null && list.length) {
+    // an example is selected: carry the same program into the new language
+    const i = list.findIndex((e) => e.id === currentExampleId);
+    loadExample(lang, i >= 0 ? i : 0);
+  } else {
+    populateExamples(lang);
+    if (list.length) editor.setValue(list[0].source); // custom code: boilerplate, keep tests
+  }
+  autosave();
+});
+$("exampleSelect").addEventListener("change", () => {
+  const idx = $("exampleSelect").value;
+  if (idx !== "") loadExample($("langSelect").value, Number(idx));
+});
+function loadExample(lang, idx) {
+  const list = EXAMPLES[lang];
+  if (!list || !list.length) return;
+  idx = Math.min(idx || 0, list.length - 1);
+  const ex = list[idx];
+  $("langSelect").value = lang;
+  setMode(lang);
+  populateExamples(lang);
+  editor.setValue(ex.source);
+  setTests(ex.tests.map((t) => ({ stdin: t.stdin, expected: t.expected_stdout })));
+  currentExampleId = ex.id;
+  syncExampleSelect();
+  toast("Loaded example: " + ex.label);
+}
+
+// ----- test cases (tab view) ---------------------------------------------
+let tests = []; // [{stdin, expected}]
+let activeTest = 0;
+let tcEditors = []; // CodeMirror instances for the active tab's stdin/expected
+
+function cmTheme() {
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "github-dark" : "github-light";
+}
+function setTests(list) {
+  tests = list.length ? list : [{ stdin: "", expected: "" }];
+  activeTest = 0;
+  renderTests();
+}
+// plain-text CodeMirror box for a stdin/expected cell
+function miniEditor(parent, value, onChange) {
+  const ta = el("textarea"); parent.appendChild(ta);
+  const cm = CodeMirror.fromTextArea(ta, {
+    mode: "text/plain", theme: cmTheme(),
+    lineNumbers: true, lineWrapping: true,
+  });
+  cm.setValue(value || "");
+  cm.on("change", () => { onChange(cm.getValue()); autosave(); });
+  requestAnimationFrame(() => cm.refresh());
+  return cm;
+}
+function renderTests() {
+  const root = $("tests"); root.innerHTML = "";
+  tcEditors = [];
+  if (activeTest >= tests.length) activeTest = tests.length - 1;
+  if (activeTest < 0) activeTest = 0;
+
+  // tab strip
+  const tabs = el("div", { class: "tc-tabs" });
+  tests.forEach((tc, i) => {
+    const tab = el("div", { class: "tc-tab" + (i === activeTest ? " active" : "") },
+      el("span", {}, "Test " + (i + 1)));
+    tab.addEventListener("click", () => { activeTest = i; renderTests(); });
+    if (tests.length > 1) {
+      const x = el("span", { class: "x", title: "Remove" }, "✕");
+      x.addEventListener("click", (e) => {
+        e.stopPropagation();
+        tests.splice(i, 1);
+        if (activeTest > i || activeTest >= tests.length) activeTest--;
+        renderTests();
+      });
+      tab.appendChild(x);
+    }
+    tabs.appendChild(tab);
+  });
+  root.appendChild(tabs);
+
+  // editors for the active tab
+  const tc = tests[activeTest];
+  const stdinCell = el("div", { class: "tc-cell" }, el("label", {}, "stdin"));
+  const expCell = el("div", { class: "tc-cell" }, el("label", {}, "expected stdout"));
+  root.appendChild(el("div", { class: "tc-cells" }, stdinCell, expCell));
+  tcEditors.push(miniEditor(stdinCell, tc.stdin, (v) => { tc.stdin = v; }));
+  tcEditors.push(miniEditor(expCell, tc.expected, (v) => { tc.expected = v; }));
+}
+$("addTcBtn").addEventListener("click", () => {
+  tests.push({ stdin: "", expected: "" });
+  activeTest = tests.length - 1;
+  renderTests();
+});
+
+// ----- autosave (last working state) -------------------------------------
+const DRAFT_KEY = "goboxd.draft";
+function autosave() {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      language: $("langSelect").value, source: editor.getValue(), tests, example: currentExampleId,
+    }));
+  } catch (_) {}
+}
+function loadDraft() {
+  try {
+    const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+    if (d && d.source != null) {
+      if (d.language) $("langSelect").value = d.language;
+      editor.setValue(d.source);
+      setTests((d.tests || []).map((t) => ({ stdin: t.stdin || "", expected: t.expected || "" })));
+      currentExampleId = d.example || null; // restore which example (if any) was loaded
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+// ----- named snippets ----------------------------------------------------
+const SNIP_KEY = "goboxd.snippets";
+function getSnippets() { try { return JSON.parse(localStorage.getItem(SNIP_KEY) || "[]"); } catch (_) { return []; } }
+function setSnippets(s) { localStorage.setItem(SNIP_KEY, JSON.stringify(s)); }
+$("saveBtn").addEventListener("click", () => {
+  const name = prompt("Save snippet as:");
+  if (!name) return;
+  const snips = getSnippets().filter((s) => s.name !== name);
+  snips.push({ name, language: $("langSelect").value, source: editor.getValue(),
+    tests: tests.map((t) => ({ stdin: t.stdin, expected: t.expected })), savedAt: Date.now() });
+  setSnippets(snips);
+  toast("Saved “" + name + "”");
+});
+$("loadBtn").addEventListener("click", openSnipDialog);
+function openSnipDialog() {
+  const body = $("snipBody"); body.innerHTML = "";
+  const snips = getSnippets();
+  if (!snips.length) { body.appendChild(el("div", { class: "empty" }, "No saved snippets yet.")); }
+  snips.sort((a, b) => b.savedAt - a.savedAt).forEach((s) => {
+    const open = el("button", {}, "Load");
+    open.addEventListener("click", () => {
+      $("langSelect").value = s.language; setMode(s.language);
+      currentExampleId = null; // a saved snippet is user code, not a pristine example
+      populateExamples(s.language);
+      editor.setValue(s.source);
+      setTests((s.tests || []).map((t) => ({ stdin: t.stdin, expected: t.expected })));
+      $("snipDialog").close(); toast("Loaded “" + s.name + "”");
+    });
+    const del = el("button", { class: "ghost" }, "Delete");
+    del.addEventListener("click", () => { setSnippets(getSnippets().filter((x) => x.name !== s.name)); openSnipDialog(); });
+    body.appendChild(el("div", { class: "snip" },
+      el("span", { class: "name" }, s.name),
+      el("small", {}, s.language),
+      el("span", { class: "spacer" }), open, del));
+  });
+  $("snipDialog").showModal();
+}
+$("snipClose").addEventListener("click", () => $("snipDialog").close());
+$("snipX").addEventListener("click", () => $("snipDialog").close());
+
+// click on the backdrop (outside the dialog box) dismisses it
+document.querySelectorAll("dialog").forEach((dlg) => {
+  dlg.addEventListener("click", (e) => {
+    if (e.target === dlg) dlg.close(); // target is the dialog itself only when the ::backdrop is hit
+  });
+});
+
+// ----- run ---------------------------------------------------------------
+$("runBtn").addEventListener("click", runCode);
+async function runCode() {
+  const lang = $("langSelect").value;
+  const source = editor.getValue();
+  if (!source.trim()) { toast("Source is empty"); return; }
+  const payloadTests = tests.map((t) => ({ stdin: t.stdin, expected_stdout: t.expected }));
+  if (!payloadTests.length) { toast("Add at least one test"); return; }
+
+  const btn = $("runBtn"); btn.disabled = true; btn.textContent = "Running…";
+  $("results").innerHTML = "<div class=\"empty\">Running…</div>";
+  const t0 = performance.now();
+  try {
+    const res = await fetch("http://localhost:8080/run", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language: lang, source, tests: payloadTests }),
+    });
+    const elapsed = Math.round(performance.now() - t0);
+    const data = await res.json();
+    if (!res.ok) {
+      $("results").innerHTML = "";
+      $("results").appendChild(el("div", { class: "result open" },
+        el("div", { class: "r-head" },
+          el("span", { class: "badge bad" }, "HTTP " + res.status),
+          el("span", { class: "meta" }, data.error || "request rejected")),
+        data.detail ? el("div", { class: "r-body" },
+          el("div", { class: "io-block" }, el("div", { class: "io-label" }, "detail"),
+            el("pre", { class: "io" }, data.detail))) : null));
+      $("runMeta").style.display = "none";
+      return;
+    }
+    renderResults(data, elapsed);
+  } catch (e) {
+    $("results").innerHTML = "";
+    $("results").appendChild(el("div", { class: "empty" }, "Network error: " + e.message));
+  } finally {
+    btn.disabled = false; btn.innerHTML = "&#9654; Run";
+  }
+}
+
+function renderResults(data, elapsed) {
+  const root = $("results"); root.innerHTML = "";
+
+  const meta = $("runMeta"); meta.style.display = "inline-flex";
+  meta.textContent = "round-trip " + elapsed + " ms";
+
+  // top summary
+  const passed = (data.tests || []).filter((t) => t.status === "accepted").length;
+  const total = (data.tests || []).length;
+  const sum = el("div", { class: "summary" },
+    el("span", { class: "badge " + badgeClass(data.status) }, data.status),
+    el("span", { class: "pill" }, passed + " / " + total + " passed"));
+  if (data.build && data.build.status) {
+    sum.appendChild(el("span", { class: "pill" }, "build: " + data.build.status +
+      (data.build.duration_ms != null ? " (" + data.build.duration_ms + " ms)" : "")));
+  }
+  root.appendChild(sum);
+
+  // build output (only when it has content or failed)
+  const b = data.build || {};
+  if ((b.stdout && b.stdout.length) || (b.stderr && b.stderr.length) || b.status === "failed" || b.status === "internal_error") {
+    root.appendChild(resultCard("Build", b.status, null, null, b.stdout, b.stderr, true));
+  }
+
+  // per test
+  (data.tests || []).forEach((t, i) => {
+    const expected = (tests[i] && tests[i].expected) || "";
+    root.appendChild(resultCard("Test " + (i + 1), t.status,
+      t.duration_ms, t.memory_peak_kb, t.stdout, t.stderr, false, expected));
+  });
+}
+
+function resultCard(title, status, durMs, memKb, stdout, stderr, openByDefault, expected) {
+  const head = el("div", { class: "r-head" },
+    el("span", { class: "badge " + badgeClass(status) }, status),
+    el("strong", {}, title));
+  const metaBits = [];
+  if (durMs != null) metaBits.push(durMs + " ms");
+  if (memKb != null && memKb > 0) metaBits.push(memKb + " KB");
+  if (metaBits.length) head.appendChild(el("span", { class: "meta" }, metaBits.join(" · ")));
+
+  const body = el("div", { class: "r-body" });
+  const addIO = (label, val) => body.appendChild(el("div", { class: "io-block" },
+    el("div", { class: "io-label" }, label), el("pre", { class: "io" }, val || "")));
+  if (stdout != null) addIO("stdout", stdout);
+  if (expected != null && status !== "accepted" && status !== "not_executed") addIO("expected", expected);
+  if (stderr && stderr.length) addIO("stderr", stderr);
+
+  const card = el("div", { class: "result" + (openByDefault || badgeClass(status) === "bad" || badgeClass(status) === "warn" ? " open" : "") }, head, body);
+  head.addEventListener("click", () => card.classList.toggle("open"));
+  return card;
+}
+
+// ----- status: /readyz + /info ------------------------------------------
+async function pollReady() {
+  const led = $("readyLed"), txt = $("readyText");
+  try {
+    const r = await fetch("http://localhost:8080/readyz");
+    const d = await r.json();
+    if (r.ok && d.status === "ready") { led.className = "led ok"; txt.textContent = "ready"; }
+    else { led.className = "led bad"; txt.textContent = d.status || "degraded"; }
+  } catch (_) { led.className = "led bad"; txt.textContent = "unreachable"; }
+}
+
+$("statusBtn").addEventListener("click", () => { $("statusDialog").showModal(); loadStatus(); });
+$("statusClose").addEventListener("click", () => $("statusDialog").close());
+$("statusX").addEventListener("click", () => $("statusDialog").close());
+$("statusRefresh").addEventListener("click", loadStatus);
+$("readyPill").addEventListener("click", () => { $("statusDialog").showModal(); loadStatus(); });
+
+async function loadStatus() {
+  const body = $("statusBody"); body.innerHTML = "<div class=\"empty\">Loading…</div>";
+  let info = null, ready = null;
+  try { info = await (await fetch("http://localhost:8080/info")).json(); } catch (_) {}
+  try { ready = await (await fetch("http://localhost:8080/readyz")).json(); } catch (_) {}
+  body.innerHTML = "";
+
+  const grid = el("div", { class: "d-grid" });
+  body.appendChild(grid);
+
+  // build the wide languages section now, but append it last so it sits below the cards
+  let languagesSection = null;
+  if (ready) {
+    grid.appendChild(section("Readiness", kv([
+      ["status", ready.status],
+      ["nsjail", (ready.nsjail && ready.nsjail.ok ? "ok" : "down") + (ready.nsjail && ready.nsjail.version ? " " + ready.nsjail.version : "")],
+    ])));
+
+    const langs = ready.languages || {};
+    if (Object.keys(langs).length) {
+      const langChips = el("div", { class: "lang-grid" });
+      for (const id of Object.keys(langs).sort()) {
+        const s = langs[id];
+        langChips.appendChild(el("span", { class: "lang-chip" },
+          el("span", { class: "led " + (s.ok ? "ok" : "bad") }),
+          id + (s.version ? " " + s.version : "")));
+      }
+      languagesSection = spanSection(section("Languages", langChips));
+    }
+  }
+  if (info) {
+    grid.appendChild(section("Build", kv([
+      ["version", info.build_info.version],
+      ["commit", info.build_info.commit || "—"],
+      ["go", info.build_info.go_version],
+      ["nsjail", info.nsjail.version || "—"],
+    ])));
+    const lim = info.limits || {};
+    grid.appendChild(section("Limits", kv([
+      ["max source", fmtBytes(lim.max_source_bytes)],
+      ["max tests", lim.max_tests],
+      ["max concurrent", lim.max_concurrent_jobs],
+      ["max request", fmtBytes(lim.max_request_bytes)],
+      ["max output", fmtBytes(lim.max_output_bytes)],
+    ])));
+    const st = info.stats || {};
+    grid.appendChild(section("Stats", kv([
+      ["in flight", st.in_flight_jobs],
+      ["jobs total", st.jobs_total],
+      ["failed (internal)", st.jobs_failed_internal],
+      ["disk free", fmtBytes(st.disk_free_bytes_jail_dir)],
+    ])));
+  }
+  if (languagesSection) grid.appendChild(languagesSection);
+  if (!info && !ready) body.appendChild(el("div", { class: "empty" }, "Could not reach the server."));
+}
+function section(title, ...kids) {
+  return el("div", { class: "d-section" },
+    el("div", { class: "d-section-title" }, title), ...kids);
+}
+// mark a section to span both grid columns
+function spanSection(sec) { sec.classList.add("d-span"); return sec; }
+function kv(pairs) {
+  const dl = el("dl", { class: "kv" });
+  for (const [k, v] of pairs) { dl.appendChild(el("dt", {}, k)); dl.appendChild(el("dd", {}, String(v == null ? "—" : v))); }
+  return dl;
+}
+function fmtBytes(n) {
+  if (n == null) return "—";
+  if (n < 1024) return n + " B";
+  if (n < 1048576) return (n / 1024).toFixed(0) + " KB";
+  if (n < 1073741824) return (n / 1048576).toFixed(1) + " MB";
+  return (n / 1073741824).toFixed(1) + " GB";
+}
+
+// ----- boot --------------------------------------------------------------
+async function boot() {
+  initTheme();
+  initEditor();
+  populateLangs(FALLBACK_LANGS);
+  setTests([{ stdin: "", expected: "" }]);
+
+  // pull the live language list from /info; fall back silently.
+  try {
+    const info = await (await fetch("http://localhost:8080/info")).json();
+    if (info && info.languages && info.languages.length) {
+      populateLangs(info.languages.map((l) => ({ id: l.id, name: l.name })));
+    }
+  } catch (_) {}
+
+  if (!loadDraft()) {
+    // first visit: seed with whatever example matches the default language
+    const id = $("langSelect").value;
+    if (EXAMPLES[id]) loadExample(id); else if (EXAMPLES.py3) { $("langSelect").value = "py3"; loadExample("py3"); }
+  }
+  setMode($("langSelect").value);
+  populateExamples($("langSelect").value);
+
+  pollReady();
+  setInterval(pollReady, 10000);
+}
+boot();
+</script>
+</body>
+</html>

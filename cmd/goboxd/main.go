@@ -11,6 +11,7 @@ import (
 
 	"github.com/ethicks-x/goboxd/internal/config"
 	"github.com/ethicks-x/goboxd/internal/handlers"
+	"github.com/ethicks-x/goboxd/internal/playground"
 	"github.com/ethicks-x/goboxd/internal/registry"
 	"github.com/ethicks-x/goboxd/internal/runner"
 	"github.com/ethicks-x/goboxd/internal/sandbox"
@@ -66,6 +67,8 @@ func main() {
 	s.Router.GET("/readyz", handlers.Readyz(prober))
 	s.Router.GET("/info", handlers.Info(reg, st, prober, cfg))
 	s.Router.POST("/run", handlers.Run(r, cfg))
+	s.Router.GET("/playground", playground.Handler())
+	s.Router.GET("/playground/examples.js", playground.ExamplesHandler())
 	s.Router.NotFound(handlers.NotFoundHandler)
 
 	stop := make(chan os.Signal, 1)
