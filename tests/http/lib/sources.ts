@@ -322,7 +322,7 @@ const palindrome: Program = {
     cpp: {
       language: "cpp",
       source:
-        '#include <iostream>\n#include <string>\nint main(){std::string s,t;while(std::getline(std::cin,t))s+=t;std::string r=s;std::reverse(r.begin(),r.end());std::cout<<(s==r?"yes":"no");return 0;}',
+        '#include <iostream>\n#include <string>\n#include <algorithm>\nint main(){std::string s,t;while(std::getline(std::cin,t))s+=t;std::string r=s;std::reverse(r.begin(),r.end());std::cout<<(s==r?"yes":"no");return 0;}',
     },
     c: {
       language: "c",
