@@ -1,9 +1,8 @@
 # Languages
 
-Languages are data, not code. Every supported language is one entry in
-[`configs/languages.yaml`](../configs/languages.yaml); the Go binary has no
-per-language branches. Adding one is a YAML block, a Dockerfile install script,
-and a smoke probe — no recompilation of the service logic.
+Every supported language is one entry in [`configs/languages.yaml`](../configs/languages.yaml); 
+the Go binary need not to be rebuilt. Adding one is a YAML block, a Dockerfile install script,
+and a smoke probe - is enough to get going.
 
 ## Registered languages
 
@@ -28,20 +27,15 @@ same way.
 `limits` below are the language defaults. A request may lower or raise any field
 via `build.limits` / `run.limits`; a missing or zero field falls back to these.
 
-| id        | Build limits (wall_s / mem_kb / procs) | Run limits (wall_s / mem_kb / procs) | Build flag allow-list                                |
-| --------- | -------------------------------------- | ------------------------------------ | ---------------------------------------------------- |
-| `c`       | 5 / 1048576 / 100                      | 3 / 524288 / 64                      | `-O0 -O1 -O2 -O3 -Wall -Wextra -std=*`               |
-| `cpp`     | 5 / 1048576 / 100                      | 3 / 524288 / 64                      | `-O0 -O1 -O2 -O3 -Wall -Wextra -std=*`               |
-| `py3`     | —                                      | 9 / 102400 / 100                     | —                                                    |
-| `bash`    | —                                      | 9 / 102400 / 100                     | —                                                    |
-| `java`    | 10 / 524288 / 100                      | 5 / 524288 / 64                      | (none)                                               |
-| `js`      | —                                      | 9 / 102400 / 100                     | —                                                    |
-| `go`      | 30 / 1048576 / 100                     | 5 / 524288 / 64                      | (none)                                               |
-| `rust`    | 10 / 1048576 / 100                     | 3 / 524288 / 64                      | `-O --edition=* -C opt-level=*`                      |
-| `verilog` | 10 / 524288 / 100                      | 5 / 524288 / 64                      | (none)                                               |
+> we have noticed a significant latency in golang build timings so we decided to
+> set some default wall_s for build limits in golang. (Might get improved later)
 
-A language with no `flag_allowlist` rejects any client-supplied build flag. A
-language with no `build` block rejects any `build` block in the request.
+| id        | Build limits (wall_s / mem_kb / procs) | Run limits (wall_s / mem_kb / procs) 
+| --------- | -------------------------------------- | ------------------------------------ 
+| `go`      | 30 / 1048576 / 100                     | 5 / 524288 / 64                      
+
+A interpreted language with no `build` step rejects any `build` block in the request.
+See: [api.md](api.md#response)
 
 ## Filename rules
 
